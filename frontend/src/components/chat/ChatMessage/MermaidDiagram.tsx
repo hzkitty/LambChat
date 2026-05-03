@@ -1,23 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  Check,
-  Copy,
-  Download,
-  Maximize2,
-  Code,
-  Eye,
-  X,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  RotateCw,
-} from "lucide-react";
+import { Check, Copy, Download, Code, Eye, X, Maximize2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   prepareFullscreenMermaidSvg,
   stripResponsiveWidthAttribute,
 } from "./mermaidSvgUtils";
+import { ViewerToolbar } from "../../common/ViewerToolbar";
 
 // Fix common AI-generated mermaid syntax issues:
 // - subgraph 🎯 ["title"] → subgraph S1["🎯 title"]
@@ -570,7 +559,7 @@ function MermaidViewer({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const MIN_SCALE = 0.1;
-  const MAX_SCALE = 5;
+  const MAX_SCALE = 10;
   const SCALE_STEP = 0.25;
 
   // Ref to read current position/scale inside native event listeners
@@ -708,99 +697,30 @@ function MermaidViewer({
     onToggleCode(next);
   };
 
-  const scalePercentage = Math.round(scale * 100);
+  const btnCls =
+    "flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
   return createPortal(
     <div className="fixed inset-0 z-[300] flex flex-col bg-black/90">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black">
+      {/* Top bar - close + code actions */}
+      <div className="flex items-center justify-between px-3 sm:px-6 py-3 bg-black">
         <button
           type="button"
           onClick={onClose}
-          className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          className={btnCls}
           aria-label={t("common.close")}
         >
-          <X size={24} className="text-white" />
+          <X size={20} className="text-white/70" />
         </button>
 
         <div className="flex items-center gap-1">
-          {/* Rotate left */}
-          <button
-            type="button"
-            onClick={() => setRotation((prev) => prev - 90)}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.rotateLeft")}
-          >
-            <RotateCcw size={20} className="text-white" />
-          </button>
-
-          {/* Rotate right */}
-          <button
-            type="button"
-            onClick={() => setRotation((prev) => prev + 90)}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.rotateRight")}
-          >
-            <RotateCw size={20} className="text-white" />
-          </button>
-
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
-          {/* Zoom out */}
-          <button
-            type="button"
-            onClick={() =>
-              setScale((prev) => Math.max(MIN_SCALE, prev - SCALE_STEP))
-            }
-            disabled={scale <= MIN_SCALE}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={t("imageViewer.zoomOut")}
-          >
-            <ZoomOut size={20} className="text-white" />
-          </button>
-
-          <span className="min-w-[60px] text-center text-white text-sm font-medium">
-            {scalePercentage}%
-          </span>
-
-          {/* Zoom in */}
-          <button
-            type="button"
-            onClick={() =>
-              setScale((prev) => Math.min(MAX_SCALE, prev + SCALE_STEP))
-            }
-            disabled={scale >= MAX_SCALE}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={t("imageViewer.zoomIn")}
-          >
-            <ZoomIn size={20} className="text-white" />
-          </button>
-
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
-          {/* Reset */}
-          <button
-            type="button"
-            onClick={() => {
-              setScale(1);
-              setRotation(0);
-              setPosition({ x: 0, y: 0 });
-            }}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.reset")}
-          >
-            <Maximize2 size={20} className="text-white" />
-          </button>
-
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
           {/* Toggle code view */}
           <button
             type="button"
             onClick={toggleCode}
             className={`flex items-center gap-1.5 rounded-lg px-3 h-10 text-sm font-medium transition-colors cursor-pointer ${
               showCode
-                ? "bg-white/20 text-white"
+                ? "bg-white/20 text-white/70"
                 : "hover:bg-white/10 text-white/70"
             }`}
             aria-label={
@@ -809,38 +729,63 @@ function MermaidViewer({
                 : t("mermaidViewer.showCode", "Show code")
             }
           >
-            {showCode ? <Eye size={18} /> : <Code size={18} />}
+            {showCode ? (
+              <Eye size={18} className="text-white/70" />
+            ) : (
+              <Code size={18} className="text-white/70" />
+            )}
             <span className="hidden sm:inline">
               {showCode
                 ? t("mermaidViewer.hideCode", "Hide code")
                 : t("mermaidViewer.showCode", "Show code")}
             </span>
           </button>
-        </div>
 
-        {/* Copy code button */}
-        <button
-          type="button"
-          onClick={handleCopyCode}
-          className="flex items-center gap-1 rounded-lg px-3 h-10 text-sm font-medium transition-colors cursor-pointer hover:bg-white/10"
-          aria-label={t("chat.message.copyCode")}
-        >
-          {copied ? (
-            <>
-              <Check size={18} className="text-green-400" />
-              <span className="text-green-400 hidden sm:inline">
-                {t("chat.message.copied")}
-              </span>
-            </>
-          ) : (
-            <>
-              <Copy size={18} className="text-white/70" />
-              <span className="text-white/70 hidden sm:inline">
-                {t("chat.message.copy")}
-              </span>
-            </>
-          )}
-        </button>
+          {/* Copy code */}
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            className="flex items-center gap-1 rounded-lg px-3 h-10 text-sm font-medium transition-colors cursor-pointer hover:bg-white/10"
+            aria-label={t("chat.message.copyCode")}
+          >
+            {copied ? (
+              <>
+                <Check size={18} className="text-green-400" />
+                <span className="text-green-400 hidden sm:inline">
+                  {t("chat.message.copied")}
+                </span>
+              </>
+            ) : (
+              <>
+                <Copy size={18} className="text-white/70" />
+                <span className="text-white/70 hidden sm:inline">
+                  {t("chat.message.copy")}
+                </span>
+              </>
+            )}
+          </button>
+
+          {/* Download SVG */}
+          <button
+            type="button"
+            onClick={() => {
+              const blob = new Blob([fullscreenSvg], { type: "image/svg+xml" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "mermaid.svg";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center gap-1.5 rounded-lg px-3 h-10 text-sm font-medium transition-colors cursor-pointer hover:bg-white/10 text-white/70"
+            aria-label={t("imageViewer.download")}
+          >
+            <Download size={18} className="text-white/70" />
+            <span className="hidden sm:inline">
+              {t("imageViewer.download")}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Main area */}
@@ -874,6 +819,26 @@ function MermaidViewer({
               draggable={false}
             />
           </div>
+
+          {/* Floating bottom controls */}
+          <ViewerToolbar
+            scale={scale}
+            minScale={MIN_SCALE}
+            maxScale={MAX_SCALE}
+            onZoomIn={() =>
+              setScale((prev) => Math.min(MAX_SCALE, prev + SCALE_STEP))
+            }
+            onZoomOut={() =>
+              setScale((prev) => Math.max(MIN_SCALE, prev - SCALE_STEP))
+            }
+            onRotateLeft={() => setRotation((prev) => prev - 90)}
+            onRotateRight={() => setRotation((prev) => prev + 90)}
+            onReset={() => {
+              setScale(1);
+              setRotation(0);
+              setPosition({ x: 0, y: 0 });
+            }}
+          />
         </div>
 
         {/* Code panel */}
@@ -887,11 +852,6 @@ function MermaidViewer({
             </pre>
           </div>
         )}
-      </div>
-
-      {/* Hint */}
-      <div className="flex items-center justify-center px-4 py-2 bg-black">
-        <p className="text-stone-400 text-xs">{t("imageViewer.hint")}</p>
       </div>
     </div>,
     document.body,

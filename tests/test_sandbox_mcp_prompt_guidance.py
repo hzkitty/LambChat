@@ -161,14 +161,14 @@ def test_sandbox_mcp_prompt_sections_split_intro_and_tool_listing() -> None:
     assert "`playwright.screenshot`" in sections[1]
 
 
-def test_sandbox_overflow_hint_mentions_schema_inspection() -> None:
+def test_sandbox_overflow_hint_mentions_service_specific_schema_inspection() -> None:
     prompt = _maybe_append_overflow_hint("sandbox prompt\n", _MAX_TOOLS_IN_PROMPT + 1)
 
     assert "mcporter list" in prompt
-    assert "mcporter list --schema" in prompt
+    assert "mcporter list <service> --schema" in prompt
 
 
-def test_sandbox_mcp_prompt_requires_schema_inspection_before_first_call() -> None:
+def test_sandbox_mcp_prompt_requires_service_specific_schema_inspection_before_first_call() -> None:
     prompt, total = _format_tools_list(
         {
             "servers": [
@@ -194,7 +194,8 @@ def test_sandbox_mcp_prompt_requires_schema_inspection_before_first_call() -> No
     assert total == 1
     assert "before the first `mcporter call`" in prompt
     assert "must inspect its parameters via `execute`" in prompt
-    assert "`mcporter list --schema`" in prompt
+    assert "`mcporter list <service> --schema`" in prompt
+    assert "`mcporter list`" in prompt
 
 
 def test_sandbox_mcp_prompt_discourages_repo_wide_grep_searches() -> None:

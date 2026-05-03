@@ -106,8 +106,8 @@ def _maybe_append_overflow_hint(prompt: str, total_count: int) -> str:
     return (
         prompt
         + f"> **Note:** Only {_MAX_TOOLS_IN_PROMPT} of {total_count} tools are shown above. "
-        + 'Use `execute(command="mcporter list")` to browse all available tools, then '
-        + '`execute(command="mcporter list --schema")` before the first call.\n'
+        + 'Use `execute(command="mcporter list")` to find the right service, then '
+        + '`execute(command="mcporter list <service> --schema")` before the first call.\n'
     )
 
 
@@ -120,8 +120,8 @@ def _maybe_append_overflow_hint_sections(
 
     return prompt_sections + (
         f"> **Note:** Only {_MAX_TOOLS_IN_PROMPT} of {total_count} tools are shown above. "
-        'Use `execute(command="mcporter list")` to browse all available tools, then '
-        '`execute(command="mcporter list --schema")` before the first call.\n',
+        'Use `execute(command="mcporter list")` to find the right service, then '
+        '`execute(command="mcporter list <service> --schema")` before the first call.\n',
     )
 
 
@@ -233,19 +233,23 @@ def _format_tools_list_sections(data: Any) -> tuple[tuple[str, ...], int]:
         "The `execute` tool is your ONLY way to invoke sandbox tools.",
         "",
         "**Required first-use sequence**: before the first `mcporter call` for any sandbox tool, "
-        "you must inspect its parameters via `execute`.",
-        "Do NOT jump straight to `mcporter call` just because a short params summary appears below.",
+        "you must inspect its parameters via `execute`: first identify the service with "
+        "`mcporter list`, then inspect that service with `mcporter list <service> --schema`.",
+        "Do NOT jump straight to `mcporter call` just because a short params summary appears below. "
+        "The summary tells you what exists, not the full tool shape.",
         "",
-        "Example — inspect first, then call `server.my_tool` with arg `query=hello`:",
+        "Example — find the service, inspect it, then call `server.my_tool` with arg `query=hello`:",
         "```",
-        'execute(command="mcporter list --schema")',
-        "# inspect the schema for server.my_tool, then:",
+        'execute(command="mcporter list")',
+        "# find the target service, then inspect it:",
+        'execute(command="mcporter list server --schema")',
+        "# after confirming the tool and its parameters:",
         'execute(command="mcporter call server.my_tool query=hello")',
         "```",
         "",
         "**Discovery** — run via `execute`:",
-        "- `mcporter list` — list all servers and tools",
-        "- `mcporter list --schema` — show parameter schemas (mandatory before first use)",
+        "- `mcporter list` — list configured services and their tools",
+        "- `mcporter list <service> --schema` — inspect one service's tools and parameter schemas before first use",
         "",
         "**Repository search discipline**:",
         "- avoid repo-wide searches unless absolutely necessary.",
@@ -310,7 +314,9 @@ def _format_tools_list_sections(data: Any) -> tuple[tuple[str, ...], int]:
             if param_line:
                 tool_lines.append(f"  {param_line}")
 
-            tool_lines.append('  → first inspect: `execute(command="mcporter list --schema")`')
+            tool_lines.append(
+                f'  → first inspect this service: `execute(command="mcporter list {server_name} --schema")`'
+            )
             tool_lines.append(
                 f'  → then call: `execute(command="mcporter call {full_name} <args>")`'
             )

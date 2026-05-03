@@ -853,13 +853,14 @@
     "uploading": "Загрузка..."
   },
   "imageViewer": {
-    "fullscreen": "[TODO]imageViewer.fullscreen",
+    "fullscreen": "Полноэкранный режим",
     "hint": "Прокрутка/Щипок для масштабирования · Перетаскивание для перемещения · ESC для закрытия",
     "reset": "Сбросить",
     "rotateLeft": "Повернуть влево",
     "rotateRight": "Повернуть вправо",
     "zoomIn": "Увеличить",
-    "zoomOut": "Уменьшить"
+    "zoomOut": "Уменьшить",
+    "download": "Скачать"
   },
   "landing": {
     "agentSystem": "Оркестрация Agent",
@@ -992,7 +993,7 @@
     "addNew": "Добавить новый MCP сервер",
     "addServer": "Добавить сервер",
     "card": {
-      "allowedRolesTooltip": "[TODO]mcp.card.allowedRolesTooltip",
+      "allowedRolesTooltip": "Разрешённые роли: {{roles}}",
       "delete": "Удалить",
       "disable": "Отключить",
       "disableTool": "Отключить инструмент",
@@ -1005,7 +1006,7 @@
       "envVarsCount": "{{count}} перем. окруж.",
       "headersCount": "{{count}} заголовок(ов)",
       "noTools": "Инструменты не найдены",
-      "roleCount": "[TODO]mcp.card.roleCount",
+      "roleCount": "{{count}} ролей",
       "system": "Системный",
       "systemDisabled": "Системный отключён",
       "toolToggleFailed": "Не удалось переключить инструмент",
@@ -1029,9 +1030,9 @@
     "featureDisabled": "Функция MCP отключена. Обратитесь к администратору для включения.",
     "form": {
       "add": "Добавить",
-      "allRoles": "[TODO]mcp.form.allRoles",
-      "allowedRoles": "[TODO]mcp.form.allowedRoles",
-      "allowedRolesDescription": "[TODO]mcp.form.allowedRolesDescription",
+      "allRoles": "Все роли (без ограничений)",
+      "allowedRoles": "Разрешённые роли",
+      "allowedRolesDescription": "Ограничить этот сервер определёнными ролями. Оставьте пустым для доступа всех ролей.",
       "args": "Аргументы (через запятую)",
       "argsPlaceholder": "@modelcontextprotocol/server-filesystem, /путь/к/каталогу",
       "cancel": "Отмена",
@@ -1039,7 +1040,7 @@
       "command": "Команда",
       "commandPlaceholder": "npx -y @anthropic/mcp-server-fetch",
       "createServer": "Создать сервер",
-      "dailyLimit": "[TODO]mcp.form.dailyLimit",
+      "dailyLimit": "Дневной лимит",
       "enabled": "Включён",
       "envKeys": "Переменные окружения",
       "envKeysDescription": "Выберите переменные окружения для внедрения в процесс MCP сервера. Они должны быть предварительно определены в настройках переменных окружения.",
@@ -1052,10 +1053,10 @@
       "noEnvVars": "Нет переменных окружения",
       "noHeaders": "Нет пользовательских заголовков",
       "noMatchingKeys": "Подходящих переменных нет",
-      "noMatchingRoles": "[TODO]mcp.form.noMatchingRoles",
-      "noRoles": "[TODO]mcp.form.noRoles",
+      "noMatchingRoles": "Подходящих ролей нет",
+      "noRoles": "Роли не найдены",
       "saveChanges": "Сохранить изменения",
-      "searchRoles": "[TODO]mcp.form.searchRoles",
+      "searchRoles": "Поиск ролей...",
       "serverName": "Имя сервера",
       "serverNamePlaceholder": "мой-mcp-сервер",
       "serverNameUneditable": "Имя сервера нельзя изменить",
@@ -1064,7 +1065,7 @@
       "transportSse": "SSE (Server-Sent Events)",
       "transportType": "Тип транспорта",
       "transportUneditable": "Тип транспорта нельзя изменить",
-      "unlimited": "[TODO]mcp.form.unlimited",
+      "unlimited": "Без ограничений",
       "url": "URL",
       "urlPlaceholder": "https://example.com/mcp",
       "validation": {
@@ -1073,7 +1074,7 @@
         "urlRequired": "URL обязателен для HTTP транспорта"
       },
       "valuePlaceholder": "значение",
-      "weeklyLimit": "[TODO]mcp.form.weeklyLimit"
+      "weeklyLimit": "Недельный лимит"
     },
     "importFromJSON": "Импорт из JSON",
     "importServers": "Импорт MCP серверов",
@@ -1100,8 +1101,8 @@
   "memory": {
     "accesses": "доступов",
     "allTypes": "Все типы",
-    "batchDeleteConfirmMessage": "[TODO]memory.batchDeleteConfirmMessage",
-    "batchDeleted": "[TODO]memory.batchDeleted",
+    "batchDeleteConfirmMessage": "Вы уверены, что хотите удалить {{count}} выбранных воспоминаний? Это действие нельзя отменить.",
+    "batchDeleted": "Удалено {{count}} воспоминаний",
     "deleteConfirm": "Удалить это воспоминание?",
     "deleteConfirmMessage": "Это действие нельзя отменить.",
     "deleteError": "Ошибка удаления",

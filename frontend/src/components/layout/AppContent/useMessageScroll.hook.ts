@@ -407,11 +407,20 @@ export function useMessageScroll(
       touchStartY = currentTouchY;
     };
 
+    const handleWheel = (event: WheelEvent) => {
+      if (event.deltaY >= -1) {
+        return;
+      }
+
+      detachFromUserGesture(getNextMessageScrollFollowStateForUserIntent);
+    };
+
     const resetTouchTracking = () => {
       touchStartY = null;
     };
 
     scroller.addEventListener("scroll", handleScroll, { passive: true });
+    scroller.addEventListener("wheel", handleWheel, { passive: true });
     scroller.addEventListener("touchstart", handleTouchStart, {
       passive: true,
     });
@@ -426,6 +435,7 @@ export function useMessageScroll(
     });
     return () => {
       scroller.removeEventListener("scroll", handleScroll);
+      scroller.removeEventListener("wheel", handleWheel);
       scroller.removeEventListener("touchstart", handleTouchStart);
       scroller.removeEventListener("touchmove", handleTouchMove);
       scroller.removeEventListener("touchend", resetTouchTracking);

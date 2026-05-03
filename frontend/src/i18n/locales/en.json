@@ -855,7 +855,8 @@
     "rotateLeft": "Rotate Left",
     "rotateRight": "Rotate Right",
     "zoomIn": "Zoom In",
-    "zoomOut": "Zoom Out"
+    "zoomOut": "Zoom Out",
+    "download": "Download"
   },
   "landing": {
     "agentSystem": "Agent Orchestration",

@@ -850,13 +850,14 @@
     "uploading": "上传中..."
   },
   "imageViewer": {
-    "fullscreen": "【待翻译】imageViewer.fullscreen",
+    "fullscreen": "全屏",
     "hint": "滚轮/双指缩放 · 拖拽/滑动移动 · ESC 关闭",
     "reset": "重置",
     "rotateLeft": "向左旋转",
     "rotateRight": "向右旋转",
     "zoomIn": "放大",
-    "zoomOut": "缩小"
+    "zoomOut": "缩小",
+    "download": "下载"
   },
   "landing": {
     "agentSystem": "Agent 编排系统",

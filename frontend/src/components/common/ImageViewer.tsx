@@ -1,25 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import {
-  X,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  RotateCw,
-  Maximize2,
-} from "lucide-react";
+import { X, Download } from "lucide-react";
+import { ViewerToolbar } from "./ViewerToolbar";
 
 interface ImageViewerProps {
-  src: string; // Image URL
-  alt?: string; // Image description
-  isOpen: boolean; // Show/hide
-  onClose: () => void; // Close callback
+  src: string;
+  alt?: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-// Scale range and step
 const MIN_SCALE = 0.1;
-const MAX_SCALE = 5;
+const MAX_SCALE = 10;
 const SCALE_STEP = 0.25;
 
 export function ImageViewer({
@@ -36,7 +29,6 @@ export function ImageViewer({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Touch gesture state
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -45,7 +37,6 @@ export function ImageViewer({
   >(null);
   const [initialScale, setInitialScale] = useState(1);
 
-  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setScale(1);
@@ -54,41 +45,32 @@ export function ImageViewer({
     }
   }, [isOpen]);
 
-  // Handle ESC key
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
+      if (e.key === "Escape") onClose();
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Lock body scroll when open
   useEffect(() => {
     if (!isOpen) return;
-
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
     };
   }, [isOpen]);
 
-  // Handle mouse wheel zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -SCALE_STEP : SCALE_STEP;
     setScale((prev) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, prev + delta)));
   }, []);
 
-  // Handle drag start
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return; // Only left click
+      if (e.button !== 0) return;
       e.preventDefault();
       setIsDragging(true);
       setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
@@ -96,7 +78,6 @@ export function ImageViewer({
     [position],
   );
 
-  // Calculate distance between two touch points
   const getPinchDistance = (touches: React.TouchList): number => {
     return Math.hypot(
       touches[0].clientX - touches[1].clientX,
@@ -104,11 +85,9 @@ export function ImageViewer({
     );
   };
 
-  // Handle touch start
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       if (e.touches.length === 1) {
-        // Single finger - prepare for drag
         const touch = e.touches[0];
         setTouchStart({
           x: touch.clientX - position.x,
@@ -116,7 +95,6 @@ export function ImageViewer({
         });
         setIsDragging(true);
       } else if (e.touches.length === 2) {
-        // Two fingers - prepare for pinch zoom
         setIsDragging(false);
         setTouchStart(null);
         const distance = getPinchDistance(e.touches);
@@ -127,20 +105,16 @@ export function ImageViewer({
     [position, scale],
   );
 
-  // Handle touch move
   const handleTouchMove = useCallback(
     (e: React.TouchEvent) => {
       e.preventDefault();
-
       if (e.touches.length === 1 && touchStart) {
-        // Single finger drag
         const touch = e.touches[0];
         setPosition({
           x: touch.clientX - touchStart.x,
           y: touch.clientY - touchStart.y,
         });
       } else if (e.touches.length === 2 && initialPinchDistance !== null) {
-        // Two finger pinch zoom
         const currentDistance = getPinchDistance(e.touches);
         const scaleFactor = currentDistance / initialPinchDistance;
         const newScale = Math.min(
@@ -153,38 +127,31 @@ export function ImageViewer({
     [touchStart, initialPinchDistance, initialScale],
   );
 
-  // Handle touch end
   const handleTouchEnd = useCallback(() => {
     setIsDragging(false);
     setTouchStart(null);
     setInitialPinchDistance(null);
   }, []);
 
-  // Handle drag move
   useEffect(() => {
     if (!isDragging) return;
-
     const handleMouseMove = (e: MouseEvent) => {
       setPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       });
     };
-
     const handleMouseUp = () => {
       setIsDragging(false);
     };
-
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging, dragStart]);
 
-  // Zoom controls
   const zoomIn = useCallback(() => {
     setScale((prev) => Math.min(MAX_SCALE, prev + SCALE_STEP));
   }, []);
@@ -193,7 +160,6 @@ export function ImageViewer({
     setScale((prev) => Math.max(MIN_SCALE, prev - SCALE_STEP));
   }, []);
 
-  // Rotate controls
   const rotateLeft = useCallback(() => {
     setRotation((prev) => prev - 90);
   }, []);
@@ -202,113 +168,51 @@ export function ImageViewer({
     setRotation((prev) => prev + 90);
   }, []);
 
-  // Reset to original state
   const reset = useCallback(() => {
     setScale(1);
     setRotation(0);
     setPosition({ x: 0, y: 0 });
   }, []);
 
-  // Handle background click to close
   const handleBackgroundClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) {
-        onClose();
-      }
+      if (e.target === e.currentTarget) onClose();
     },
     [onClose],
   );
 
-  // Don't render if not open
   if (!isOpen) return null;
-
-  const scalePercentage = Math.round(scale * 100);
 
   return createPortal(
     <div
       className="fixed inset-0 z-[300] flex flex-col bg-black/90"
       onClick={handleBackgroundClick}
     >
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black">
-        {/* Close button */}
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-3 sm:px-6 py-3 bg-black">
         <button
           type="button"
           onClick={onClose}
           className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           aria-label={t("common.close")}
         >
-          <X size={24} className="text-white" />
+          <X size={20} className="text-white/70" />
         </button>
 
-        {/* Controls */}
-        <div className="flex items-center gap-1">
-          {/* Rotate left */}
-          <button
-            type="button"
-            onClick={rotateLeft}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.rotateLeft")}
-          >
-            <RotateCcw size={20} className="text-white" />
-          </button>
-
-          {/* Rotate right */}
-          <button
-            type="button"
-            onClick={rotateRight}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.rotateRight")}
-          >
-            <RotateCw size={20} className="text-white" />
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
-          {/* Zoom out */}
-          <button
-            type="button"
-            onClick={zoomOut}
-            disabled={scale <= MIN_SCALE}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={t("imageViewer.zoomOut")}
-          >
-            <ZoomOut size={20} className="text-white" />
-          </button>
-
-          {/* Scale percentage */}
-          <span className="min-w-[60px] text-center text-white text-sm font-medium">
-            {scalePercentage}%
-          </span>
-
-          {/* Zoom in */}
-          <button
-            type="button"
-            onClick={zoomIn}
-            disabled={scale >= MAX_SCALE}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label={t("imageViewer.zoomIn")}
-          >
-            <ZoomIn size={20} className="text-white" />
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-white/20 mx-2" />
-
-          {/* Reset */}
-          <button
-            type="button"
-            onClick={reset}
-            className="flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label={t("imageViewer.reset")}
-          >
-            <Maximize2 size={20} className="text-white" />
-          </button>
-        </div>
-
-        {/* Empty space for balance */}
-        <div className="w-10" />
+        <button
+          type="button"
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = src;
+            a.download = "";
+            a.click();
+          }}
+          className="flex items-center gap-1.5 rounded-lg px-3 h-10 text-sm font-medium transition-colors cursor-pointer hover:bg-white/10 text-white/70"
+          aria-label={t("imageViewer.download")}
+        >
+          <Download size={18} className="text-white/70" />
+          <span className="hidden sm:inline">{t("imageViewer.download")}</span>
+        </button>
       </div>
 
       {/* Main area */}
@@ -330,7 +234,7 @@ export function ImageViewer({
             style={{
               transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
               transition: isDragging ? "none" : "transform 0.1s ease-out",
-              touchAction: "none", // Prevent default touch behaviors
+              touchAction: "none",
             }}
             onMouseDown={handleMouseDown}
             onTouchStart={handleTouchStart}
@@ -339,11 +243,17 @@ export function ImageViewer({
             draggable={false}
           />
         </div>
-      </div>
 
-      {/* Hint */}
-      <div className="flex items-center justify-center px-4 py-2 bg-black">
-        <p className="text-white/60 text-xs">{t("imageViewer.hint")}</p>
+        <ViewerToolbar
+          scale={scale}
+          minScale={MIN_SCALE}
+          maxScale={MAX_SCALE}
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onRotateLeft={rotateLeft}
+          onRotateRight={rotateRight}
+          onReset={reset}
+        />
       </div>
     </div>,
     document.body,

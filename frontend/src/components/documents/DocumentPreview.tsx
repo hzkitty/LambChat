@@ -9,7 +9,7 @@ import {
   Copy,
   Check,
   Download,
-  Maximize2,
+  Columns2,
   Expand,
   Shrink,
   Eye,
@@ -538,7 +538,7 @@ export default function DocumentPreview({
             >
               {isSidebar ? (
                 <>
-                  <Maximize2 size={16} />
+                  <Columns2 size={16} />
                   <span className="hidden xl:inline">
                     {t("documents.centerView", "居中")}
                   </span>

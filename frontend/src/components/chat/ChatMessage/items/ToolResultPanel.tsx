@@ -12,7 +12,7 @@ import {
   CheckCircle,
   XCircle,
   Ban,
-  Maximize2,
+  Columns2,
   PanelRight,
   Expand,
   Shrink,
@@ -538,7 +538,7 @@ export function ToolResultPanel({
                   >
                     {isSidebar ? (
                       <>
-                        <Maximize2 size={14} />
+                        <Columns2 size={14} />
                         <span className="hidden xl:inline truncate min-w-0">
                           {t("documents.centerView", "居中")}
                         </span>

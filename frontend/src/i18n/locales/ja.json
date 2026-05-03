@@ -851,13 +851,14 @@
     "uploading": "アップロード中..."
   },
   "imageViewer": {
-    "fullscreen": "[TODO]imageViewer.fullscreen",
+    "fullscreen": "全画面",
     "hint": "スクロール/ピンチでズーム · ドラッグ/スワイプで移動 · ESCで閉じる",
     "reset": "リセット",
     "rotateLeft": "左に回転",
     "rotateRight": "右に回転",
     "zoomIn": "拡大",
-    "zoomOut": "縮小"
+    "zoomOut": "縮小",
+    "download": "ダウンロード"
   },
   "landing": {
     "agentSystem": "Agent オーケストレーション",
@@ -990,7 +991,7 @@
     "addNew": "新しいMCPサーバーを追加",
     "addServer": "サーバー追加",
     "card": {
-      "allowedRolesTooltip": "[TODO]mcp.card.allowedRolesTooltip",
+      "allowedRolesTooltip": "許可されたロール：{{roles}}",
       "delete": "削除",
       "disable": "無効化",
       "disableTool": "ツールを無効化",
@@ -1003,7 +1004,7 @@
       "envVarsCount": "{{count}}個の環境変数",
       "headersCount": "{{count}}個のヘッダー",
       "noTools": "ツールが見つかりません",
-      "roleCount": "[TODO]mcp.card.roleCount",
+      "roleCount": "{{count}}個のロール",
       "system": "システム",
       "systemDisabled": "システム無効",
       "toolToggleFailed": "ツールの切り替えに失敗しました",
@@ -1027,9 +1028,9 @@
     "featureDisabled": "MCP機能が無効です。管理者に連絡して有効にしてください。",
     "form": {
       "add": "追加",
-      "allRoles": "[TODO]mcp.form.allRoles",
-      "allowedRoles": "[TODO]mcp.form.allowedRoles",
-      "allowedRolesDescription": "[TODO]mcp.form.allowedRolesDescription",
+      "allRoles": "すべてのロール（制限なし）",
+      "allowedRoles": "許可されたロール",
+      "allowedRolesDescription": "このサーバーを特定のロールに制限します。空欄の場合はすべてのロールが許可されます。",
       "args": "引数（カンマ区切り）",
       "argsPlaceholder": "@modelcontextprotocol/server-filesystem, /path/to/directory",
       "cancel": "キャンセル",
@@ -1037,7 +1038,7 @@
       "command": "コマンド",
       "commandPlaceholder": "npx -y @anthropic/mcp-server-fetch",
       "createServer": "サーバーを作成",
-      "dailyLimit": "[TODO]mcp.form.dailyLimit",
+      "dailyLimit": "1日の制限",
       "enabled": "有効",
       "envKeys": "環境変数",
       "envKeysDescription": "このMCPサーバープロセスに注入する環境変数を選択してください。事前に環境変数設定で定義されている必要があります。",
@@ -1050,10 +1051,10 @@
       "noEnvVars": "環境変数なし",
       "noHeaders": "カスタムヘッダーなし",
       "noMatchingKeys": "一致する変数がありません",
-      "noMatchingRoles": "[TODO]mcp.form.noMatchingRoles",
-      "noRoles": "[TODO]mcp.form.noRoles",
+      "noMatchingRoles": "一致するロールがありません",
+      "noRoles": "ロールが見つかりません",
       "saveChanges": "変更を保存",
-      "searchRoles": "[TODO]mcp.form.searchRoles",
+      "searchRoles": "ロールを検索...",
       "serverName": "サーバー名",
       "serverNamePlaceholder": "my-mcp-server",
       "serverNameUneditable": "サーバー名は変更できません",
@@ -1062,7 +1063,7 @@
       "transportSse": "SSE（サーバー送信イベント）",
       "transportType": "転送タイプ",
       "transportUneditable": "転送タイプは変更できません",
-      "unlimited": "[TODO]mcp.form.unlimited",
+      "unlimited": "無制限",
       "url": "URL",
       "urlPlaceholder": "https://example.com/mcp",
       "validation": {
@@ -1071,7 +1072,7 @@
         "urlRequired": "HTTP転送にはURLが必要です"
       },
       "valuePlaceholder": "値",
-      "weeklyLimit": "[TODO]mcp.form.weeklyLimit"
+      "weeklyLimit": "週間の制限"
     },
     "importFromJSON": "JSONからインポート",
     "importServers": "MCPサーバーをインポート",
@@ -1098,8 +1099,8 @@
   "memory": {
     "accesses": "回アクセス",
     "allTypes": "すべてのタイプ",
-    "batchDeleteConfirmMessage": "[TODO]memory.batchDeleteConfirmMessage",
-    "batchDeleted": "[TODO]memory.batchDeleted",
+    "batchDeleteConfirmMessage": "選択した{{count}}件の記憶を削除しますか？この操作は取り消せません。",
+    "batchDeleted": "{{count}}件の記憶を削除しました",
     "deleteConfirm": "この記憶を削除しますか？",
     "deleteConfirmMessage": "この操作は元に戻せません。",
     "deleteError": "削除に失敗しました",

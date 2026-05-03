@@ -866,6 +866,24 @@ test("detaches the active mobile stream immediately when the user starts touchin
   assert.equal(nextState.manualDetachFromStream, true);
 });
 
+test("detaches the active desktop stream immediately on an explicit upward wheel intent", () => {
+  const nextState = getNextMessageScrollFollowStateForUserIntent({
+    state: {
+      userScrolledUp: false,
+      autoScrollActive: true,
+      streamLockActive: true,
+      manualDetachFromStream: false,
+    },
+    isMobileViewport: false,
+    streamingAssistantActive: true,
+  });
+
+  assert.equal(nextState.userScrolledUp, true);
+  assert.equal(nextState.autoScrollActive, false);
+  assert.equal(nextState.streamLockActive, false);
+  assert.equal(nextState.manualDetachFromStream, false);
+});
+
 test("detaches the active desktop stream on the first slight upward scroll", () => {
   const nextState = getNextMessageScrollFollowStateForUserScroll({
     state: {

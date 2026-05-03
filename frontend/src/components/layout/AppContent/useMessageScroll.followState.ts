@@ -141,7 +141,7 @@ export function getNextMessageScrollFollowStateForUserIntent({
   isMobileViewport: boolean;
   streamingAssistantActive: boolean;
 }): MessageScrollFollowState {
-  if (!isMobileViewport || !state.autoScrollActive) {
+  if (!state.autoScrollActive) {
     return state;
   }
 
@@ -151,7 +151,8 @@ export function getNextMessageScrollFollowStateForUserIntent({
     autoScrollActive: false,
     streamLockActive: false,
     manualDetachFromStream:
-      state.manualDetachFromStream || streamingAssistantActive,
+      state.manualDetachFromStream ||
+      (isMobileViewport && streamingAssistantActive),
   };
 }
 
