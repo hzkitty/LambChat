@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { ModelIconImg } from "./modelIcon.tsx";
 import { shouldCloseModelSelector } from "./modelSelectorGuards";
+import { getModelSelectorDropdownStyle } from "./modelSelectorPosition";
 import type { ModelOption } from "../../services/api/model";
 
 const MAX_PINNED = 10;
@@ -254,10 +255,11 @@ const ModelSelector = memo(function ModelSelector({
   const dropdownStyle = (() => {
     if (!showSelector || !containerRef.current) return undefined;
     const rect = containerRef.current.getBoundingClientRect();
-    return {
-      top: rect.bottom + 8,
-      left: rect.left,
-    };
+    return getModelSelectorDropdownStyle({
+      triggerRect: rect,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    });
   })();
 
   // Sort models: pinned first (in pinned order), then unpinned (original order)
@@ -310,10 +312,13 @@ const ModelSelector = memo(function ModelSelector({
         createPortal(
           <div
             ref={dropdownRef}
-            className="fixed z-[301] w-72 max-h-80 rounded-xl bg-white dark:bg-stone-800 shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden animate-scale-in"
+            className="fixed z-[301] w-72 rounded-xl bg-white dark:bg-stone-800 shadow-lg border border-stone-200 dark:border-stone-700 overflow-hidden animate-scale-in"
             style={dropdownStyle}
           >
-            <div className="overflow-y-auto overscroll-contain max-h-full">
+            <div
+              className="overflow-y-auto overscroll-contain max-h-full"
+              style={{ maxHeight: dropdownStyle?.maxHeight }}
+            >
               {sortedModels.pinned.map((model) => (
                 <ModelItem
                   key={model.id}

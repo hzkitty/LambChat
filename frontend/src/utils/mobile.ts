@@ -67,3 +67,38 @@ export function scrollFocusedInputIntoView(): void {
     }, delay);
   });
 }
+
+/**
+ * Install mobile viewport handlers without resetting during ordinary in-page taps.
+ */
+export function installMobileViewportResetHandlers(): void {
+  if (
+    !isMobileDevice() ||
+    typeof window === "undefined" ||
+    typeof document === "undefined"
+  ) {
+    return;
+  }
+
+  let pageWasHidden = document.visibilityState === "hidden";
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      pageWasHidden = true;
+      return;
+    }
+
+    if (pageWasHidden) {
+      pageWasHidden = false;
+      resetMobileViewport();
+    }
+  });
+
+  window.addEventListener("focus", () => {
+    if (!pageWasHidden) return;
+    pageWasHidden = false;
+    resetMobileViewport();
+  });
+
+  document.addEventListener("focusin", scrollFocusedInputIntoView);
+}

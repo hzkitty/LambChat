@@ -7,6 +7,7 @@ import type { MessageAttachment } from "../../../types";
 import { getFullUrl } from "../../../services/api";
 import { MarkdownContent } from "./MarkdownContent";
 import { openAttachmentPreview } from "../attachmentPreviewStore";
+import { getUserMessageActionButtonVisibilityClass } from "./userMessageBubbleState";
 
 // User message bubble component (with copy function, supports markdown rendering) - ChatGPT style
 export function UserMessageBubble({
@@ -134,10 +135,4 @@ export function UserMessageBubble({
       )}
     </div>
   );
-}
-
-export function getUserMessageActionButtonVisibilityClass(
-  isLastMessage?: boolean,
-) {
-  return isLastMessage ? "" : "opacity-0 group-hover:opacity-100";
 }

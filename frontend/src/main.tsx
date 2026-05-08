@@ -22,30 +22,12 @@ import "./styles/markdown.css";
 import "./styles/utilities.css";
 import { AuthProvider } from "./hooks/useAuth";
 import { SettingsProvider } from "./contexts/SettingsContext";
-import {
-  isMobileDevice,
-  resetMobileViewport,
-  scrollFocusedInputIntoView,
-} from "./utils/mobile";
+import { installMobileViewportResetHandlers } from "./utils/mobile";
 import { registerLambChatPwa } from "./pwa";
 
 // Fix mobile viewport zoom issue after notification interaction
 // This prevents the page from staying zoomed in after clicking browser notifications
-if (typeof window !== "undefined" && isMobileDevice()) {
-  // Reset viewport on visibility change (when app comes back from background)
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      resetMobileViewport();
-    }
-  });
-
-  // Also handle focus event as a fallback
-  window.addEventListener("focus", () => {
-    resetMobileViewport();
-  });
-
-  document.addEventListener("focusin", scrollFocusedInputIntoView);
-}
+installMobileViewportResetHandlers();
 
 registerLambChatPwa();
 

@@ -18,6 +18,7 @@ import {
   getNextMessageScrollFollowStateForUserGesture,
   getNextMessageScrollFollowStateForUserIntent,
   getNextMessageScrollFollowStateForUserScroll,
+  didLatestStreamingAssistantFinish,
   highlightElementForExternalNavigation,
   scrollElementIntoViewWithRetries,
   shouldArmPendingHistoryScroll,
@@ -937,6 +938,55 @@ test("does not re-arm streaming follow mode while mobile detach lock is active",
       isLoadingHistory: false,
     }),
     null,
+  );
+});
+
+test("does not start a fresh bottom scroll when the active stream finishes", () => {
+  assert.equal(
+    getMessageUpdateScrollAction({
+      previousMessages: [
+        { id: "assistant-1", role: "assistant", isStreaming: true },
+      ],
+      nextMessages: [
+        { id: "assistant-1", role: "assistant", isStreaming: false },
+      ],
+      state: {
+        userScrolledUp: false,
+        autoScrollActive: false,
+        streamLockActive: true,
+        manualDetachFromStream: false,
+      },
+      isNearBottom: true,
+      isLoadingHistory: false,
+      shouldMaintainStreamLock: true,
+    }),
+    null,
+  );
+});
+
+test("detects when the latest assistant stream finishes", () => {
+  assert.equal(
+    didLatestStreamingAssistantFinish({
+      previousMessages: [
+        { id: "assistant-1", role: "assistant", isStreaming: true },
+      ],
+      nextMessages: [
+        { id: "assistant-1", role: "assistant", isStreaming: false },
+      ],
+    }),
+    true,
+  );
+
+  assert.equal(
+    didLatestStreamingAssistantFinish({
+      previousMessages: [
+        { id: "assistant-1", role: "assistant", isStreaming: true },
+      ],
+      nextMessages: [
+        { id: "assistant-2", role: "assistant", isStreaming: false },
+      ],
+    }),
+    false,
   );
 });
 

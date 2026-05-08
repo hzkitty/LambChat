@@ -16,6 +16,7 @@ export {
   shouldKeepExternalNavigationPending,
   shouldScrollExternalNavigationFallbackToMessage,
 } from "./useMessageScroll.externalNavigation";
+export { didLatestStreamingAssistantFinish } from "./messageScrollUtils";
 
 export {
   createMessageScrollFollowState,

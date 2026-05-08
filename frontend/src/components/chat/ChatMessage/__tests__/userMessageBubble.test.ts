@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getUserMessageActionButtonVisibilityClass } from "../UserMessageBubble";
+import { getUserMessageActionButtonVisibilityClass } from "../userMessageBubbleState";
 
 test("keeps user message action buttons visible for the latest message", () => {
   const className = getUserMessageActionButtonVisibilityClass(true);

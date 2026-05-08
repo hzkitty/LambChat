@@ -53,6 +53,7 @@ interface StartVirtuosoScrollToBottomOptions {
 export interface ScrollMessageLike {
   id: string;
   role?: string;
+  isStreaming?: boolean;
 }
 
 export function getAtBottomThresholdPx(isMobileViewport: boolean): number {
@@ -113,6 +114,25 @@ export function hasNewOutgoingMessage(
   return appendedMessages[0]?.role === "user";
 }
 
+export function didLatestStreamingAssistantFinish({
+  previousMessages,
+  nextMessages,
+}: {
+  previousMessages: ScrollMessageLike[];
+  nextMessages: ScrollMessageLike[];
+}): boolean {
+  const previousLatestMessage = previousMessages[previousMessages.length - 1];
+  const nextLatestMessage = nextMessages[nextMessages.length - 1];
+
+  return (
+    previousLatestMessage?.id === nextLatestMessage?.id &&
+    previousLatestMessage?.role === "assistant" &&
+    nextLatestMessage?.role === "assistant" &&
+    previousLatestMessage.isStreaming === true &&
+    nextLatestMessage.isStreaming === false
+  );
+}
+
 export function shouldAutoScrollForMessageUpdate({
   previousMessages,
   nextMessages,
@@ -163,6 +183,7 @@ export function shouldAutoScrollForMessageUpdate({
   if (latestContinued) {
     return (
       !manualDetachActive &&
+      nextLatestMessage.isStreaming !== false &&
       !autoScrollActive &&
       (isNearBottom || shouldMaintainStreamLock)
     );

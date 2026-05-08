@@ -6,6 +6,7 @@ import {
   forceScrollerToPhysicalBottom,
   getAutoScrollResumeThresholdPx,
   getAwayFromBottomThresholdPx,
+  didLatestStreamingAssistantFinish,
   shouldAutoScrollAfterViewportChange,
   startVirtuosoScrollToBottom,
 } from "./messageScrollUtils";
@@ -591,6 +592,17 @@ export function useMessageScroll(
       scrollToBottom();
     } else if (messageUpdateAction === "request-scroll-to-bottom") {
       requestScrollToBottom("default");
+    }
+
+    if (
+      didLatestStreamingAssistantFinish({
+        previousMessages,
+        nextMessages: messages,
+      })
+    ) {
+      scrollCleanupRef.current?.();
+      scrollCleanupRef.current = null;
+      autoScrollActiveRef.current = false;
     }
 
     if (!hasStreamingAssistantMessage) {
