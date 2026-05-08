@@ -41,6 +41,7 @@ import {
 import { createOptimisticMessagesForSend } from "./useAgent/optimisticMessages";
 import { resolvePersonaEnabledSkills } from "./useAgent/personaRequestConfig";
 import { translateBackendError } from "../utils/backendErrors";
+import { dispatchSessionTitleUpdated } from "../utils/sessionTitleEvents";
 
 export function useAgent(options?: UseAgentOptions): UseAgentReturn {
   const { hasAnyPermission } = useAuth();
@@ -608,6 +609,10 @@ export function useAgent(options?: UseAgentOptions): UseAgentReturn {
                     }
                   : null,
               );
+              dispatchSessionTitleUpdated({
+                sessionId: newSessionId,
+                title: result.title,
+              });
             })
             .catch((err) => {
               console.warn("[sendMessage] Failed to generate title:", err);

@@ -9,6 +9,10 @@ import { ErrorBoundary } from "./components/common/ErrorBoundary";
 import { useSEO } from "./hooks/usePageTitle";
 import { Permission } from "./types";
 import { sessionApi } from "./services/api";
+import {
+  getCachedSessionTitle,
+  listenSessionTitleUpdated,
+} from "./utils/sessionTitleEvents";
 
 const SharedPage = lazy(() =>
   import("./components/share/SharedPage").then((m) => ({
@@ -59,8 +63,7 @@ const NotFoundPage = lazy(() =>
   })),
 );
 
-// Chat Page Component - handles session name for page title
-function ChatPage() {
+function ChatPageSEO() {
   const { sessionId } = useParams<{ sessionId?: string }>();
   const [sessionName, setSessionName] = useState<string | null>(null);
   const prevSessionIdRef = useRef<string | null>(null);
@@ -93,6 +96,22 @@ function ChatPage() {
     fetchSessionName();
   }, [sessionId]);
 
+  // React immediately when generateTitle finishes in the active chat session.
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const cachedTitle = getCachedSessionTitle(sessionId);
+    if (cachedTitle) {
+      setSessionName(cachedTitle);
+    }
+
+    return listenSessionTitleUpdated((detail) => {
+      if (detail.sessionId === sessionId) {
+        setSessionName(detail.title);
+      }
+    });
+  }, [sessionId]);
+
   // Poll for session name after initial load (handles race with generate-title)
   useEffect(() => {
     if (!sessionId || sessionName) return;
@@ -116,7 +135,17 @@ function ChatPage() {
     path: sessionId ? `/chat/${sessionId}` : "/chat",
   });
 
-  return <AppContent key="chat" activeTab="chat" />;
+  return null;
+}
+
+// Chat Page Component
+function ChatPage() {
+  return (
+    <>
+      <ChatPageSEO />
+      <AppContent key="chat" activeTab="chat" />
+    </>
+  );
 }
 
 // Simple page components that set the page title and render AppContent
