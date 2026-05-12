@@ -45,6 +45,7 @@ export function isDocumentFile(ext: string): boolean {
     isWordFile(ext) ||
     isExcelFile(ext) ||
     isPptFile(ext) ||
+    isCadFile(ext) ||
     isEbookFile(ext) ||
     isDataFile(ext)
   );
@@ -292,10 +293,10 @@ export function isWordFile(ext: string): boolean {
 
 // Check if file is supported by the in-browser Word preview converter
 export function isWordPreviewFile(ext: string): boolean {
-  return ext === "docx";
+  return ext === "doc" || ext === "docx";
 }
 
-// Check if file is legacy Word format (.doc)
+// Check if file is a Word format that still has no browser-side preview path
 export function isLegacyDocFile(ext: string): boolean {
   return isWordFile(ext) && !isWordPreviewFile(ext);
 }
@@ -335,6 +336,21 @@ export function isLegacyPptFile(ext: string): boolean {
 // Check if file is HTML
 export function isHtmlFile(ext: string): boolean {
   return ext === "html" || ext === "htm";
+}
+
+// Check if file is a CAD drawing
+export function isCadFile(ext: string): boolean {
+  return isDxfFile(ext) || isDwgFile(ext);
+}
+
+// Check if file is AutoCAD Drawing Exchange Format
+export function isDxfFile(ext: string): boolean {
+  return ext === "dxf";
+}
+
+// Check if file is AutoCAD native Drawing format
+export function isDwgFile(ext: string): boolean {
+  return ext === "dwg";
 }
 
 const FILE_LINK_EXTENSIONS = new Set([
@@ -419,6 +435,9 @@ const FILE_LINK_EXTENSIONS = new Set([
   // Diagrams
   "excalidraw",
   "exdraw",
+  // CAD
+  "dxf",
+  "dwg",
   // Media
   "mp4",
   "webm",
@@ -469,21 +488,61 @@ export interface FileLinkInfo {
   fileName: string;
 }
 
+function getFileLinkInfoFromName(candidate: string): FileLinkInfo {
+  const fileName = candidate.trim().split(/[\\/]/).pop() || "";
+  const dotIndex = fileName.lastIndexOf(".");
+  if (dotIndex < 1) return { isFile: false, fileName: "" };
+  const ext = fileName.slice(dotIndex + 1).toLowerCase();
+  if (FILE_LINK_EXTENSIONS.has(ext)) {
+    return { isFile: true, fileName };
+  }
+  return { isFile: false, fileName: "" };
+}
+
 export function isFileLink(href: string): FileLinkInfo {
   try {
     const url = new URL(href, window.location.origin);
     const pathname = url.pathname;
     const lastSegment = pathname.split("/").pop() || "";
-    const dotIndex = lastSegment.lastIndexOf(".");
-    if (dotIndex < 1) return { isFile: false, fileName: "" };
-    const ext = lastSegment.slice(dotIndex + 1).toLowerCase();
-    if (FILE_LINK_EXTENSIONS.has(ext)) {
-      return { isFile: true, fileName: lastSegment };
+    const pathInfo = getFileLinkInfoFromName(decodeURIComponent(lastSegment));
+    if (pathInfo.isFile) {
+      return pathInfo;
+    }
+
+    for (const key of ["filename", "fileName", "name", "file", "path"]) {
+      const value = url.searchParams.get(key);
+      if (!value) continue;
+      const queryInfo = getFileLinkInfoFromName(decodeURIComponent(value));
+      if (queryInfo.isFile) {
+        return queryInfo;
+      }
+    }
+
+    const disposition = url.searchParams.get("response-content-disposition");
+    if (disposition) {
+      const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+      if (match?.[1]) {
+        const dispositionInfo = getFileLinkInfoFromName(
+          decodeURIComponent(match[1]),
+        );
+        if (dispositionInfo.isFile) {
+          return dispositionInfo;
+        }
+      }
     }
   } catch {
     // invalid URL, ignore
   }
   return { isFile: false, fileName: "" };
+}
+
+export function getFileLinkInfo(
+  href: string,
+  displayName?: string,
+): FileLinkInfo {
+  const hrefInfo = isFileLink(href);
+  if (hrefInfo.isFile) return hrefInfo;
+  return displayName ? getFileLinkInfoFromName(displayName) : hrefInfo;
 }
 
 // Check if file type is supported for preview
@@ -494,13 +553,13 @@ export function isPreviewableFile(ext: string): boolean {
     isWordFile(ext) ||
     isExcelFile(ext) ||
     isPptFile(ext) ||
+    isCadFile(ext) ||
     isHtmlFile(ext) ||
     isCodeFile(ext) ||
     isMarkdownFile(ext) ||
     isExcalidrawFile(ext) ||
     isVideoFile(ext) ||
-    isAudioFile(ext) ||
-    isEbookFile(ext)
+    isAudioFile(ext)
   );
 }
 

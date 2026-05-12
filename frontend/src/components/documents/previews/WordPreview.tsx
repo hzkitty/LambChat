@@ -7,6 +7,10 @@ import {
   extractDocxTextFallback,
   isDocxSafeForMammoth,
 } from "./wordPreviewUtils";
+import {
+  extractLegacyDocText,
+  isLegacyDocArrayBuffer,
+} from "./legacyDocPreviewUtils";
 
 interface WordPreviewProps {
   arrayBuffer: ArrayBuffer;
@@ -218,19 +222,31 @@ const WordPreview = memo(function WordPreview({
 
   useEffect(() => {
     const convertWord = async () => {
-      const renderTextFallback = async () => {
-        const fallbackText = await extractDocxTextFallback(arrayBuffer);
-        if (fallbackText.trim()) {
-          setHtml(docxTextToHtml(fallbackText));
+      const renderText = (text: string) => {
+        if (text.trim()) {
+          setHtml(docxTextToHtml(text));
           setError(null);
           return true;
         }
         return false;
       };
 
+      const renderDocxTextFallback = async () => {
+        const fallbackText = await extractDocxTextFallback(arrayBuffer);
+        return renderText(fallbackText);
+      };
+
       try {
+        if (isLegacyDocArrayBuffer(arrayBuffer)) {
+          const legacyText = await extractLegacyDocText(arrayBuffer);
+          if (!renderText(legacyText)) {
+            setError(t("documents.wordConversionError"));
+          }
+          return;
+        }
+
         if (!(await isDocxSafeForMammoth(arrayBuffer))) {
-          if (!(await renderTextFallback())) {
+          if (!(await renderDocxTextFallback())) {
             setError(t("documents.wordConversionError"));
           }
           return;
@@ -255,7 +271,10 @@ const WordPreview = memo(function WordPreview({
         setError(null);
       } catch (err) {
         try {
-          if (await renderTextFallback()) {
+          if (
+            !isLegacyDocArrayBuffer(arrayBuffer) &&
+            (await renderDocxTextFallback())
+          ) {
             return;
           }
         } catch (fallbackErr) {

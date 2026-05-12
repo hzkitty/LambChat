@@ -1,7 +1,7 @@
 import { SkeletonLine } from "./primitives";
 import { SidebarSkeleton } from "./SidebarSkeleton";
 
-/** Full chat page skeleton: sidebar + header + chat messages + input */
+/** Full chat page skeleton: sidebar + header + welcome */
 export function ChatPageSkeleton() {
   return (
     <div
@@ -12,23 +12,28 @@ export function ChatPageSkeleton() {
 
       {/* Main area */}
       <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-        {/* Header skeleton — matches real Header: no border-b, uses padding */}
-        <div className="relative z-50 flex items-center px-3 pt-3 sm:px-4 pb-1 shrink-0">
+        {/* Header skeleton — matches real Header layout */}
+        <header
+          className="relative z-50 flex items-center px-3 sm:px-5 pb-1 shrink-0"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Mobile hamburger */}
+            <div className="skeleton-line size-8 rounded-lg sm:hidden" />
+            {/* Model selector — text button style */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <SkeletonLine width="w-28 sm:w-36" className="!h-5 !rounded-md" />
+              <div className="skeleton-line size-4 rounded-sm" />
+            </div>
+          </div>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* More menu */}
+            <div className="skeleton-line size-8 rounded-lg" />
+            {/* UserMenu avatar */}
             <div className="skeleton-line size-8 rounded-lg" />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:hidden">
-            <div className="skeleton-line h-4 w-24 sm:w-28 rounded-md" />
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
-            <div className="skeleton-line size-8 rounded-lg sm:hidden" />
-            <div className="skeleton-line size-8 rounded-lg hidden sm:block" />
-            <div className="skeleton-line size-8 rounded-lg hidden sm:block" />
-            <div className="skeleton-line size-8 rounded-lg hidden sm:block" />
-            <div className="skeleton-line size-8 rounded-lg hidden sm:block" />
-            <div className="skeleton-line size-8 rounded-lg hidden sm:block" />
-          </div>
-        </div>
+        </header>
 
         {/* Welcome skeleton */}
         <main className="flex-1 overflow-hidden">
@@ -39,9 +44,71 @@ export function ChatPageSkeleton() {
   );
 }
 
+/** Shared user message skeleton block */
+function UserMessageSkeleton({
+  msg,
+}: {
+  msg: { bubble: string; lines: string[] };
+}) {
+  return (
+    <div className="w-full px-2 py-3 sm:py-4 sm:px-4 group">
+      <div className="mx-auto flex max-w-3xl lg:max-w-4xl xl:max-w-5xl justify-end px-2">
+        <div className={`flex flex-col items-end max-w-[90%] ${msg.bubble}`}>
+          <div
+            className="rounded-3xl max-w-full px-5 py-2 shadow-sm border"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--theme-primary-light), var(--theme-bg))",
+              borderColor: "var(--theme-border)",
+            }}
+          >
+            <div className="leading-relaxed text-[15px] sm:text-base space-y-1.5">
+              {msg.lines.map((w, li) => (
+                <SkeletonLine key={li} width={w} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Shared assistant message skeleton block */
+function AssistantMessageSkeleton() {
+  return (
+    <div className="group w-full animate-[fade-in_0.3s_ease-out] scroll-mt-6 rounded-2xl">
+      <div className="mx-auto flex flex-col max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 sm:px-6">
+        {/* Avatar + name */}
+        <div className="mb-3 flex items-center gap-2">
+          <div className="skeleton-line size-6 rounded-full shrink-0" />
+          <SkeletonLine
+            width="w-16 sm:w-20"
+            className="!h-[18px] sm:!h-[20px]"
+          />
+        </div>
+        {/* Response content skeleton */}
+        <div className="min-w-0 min-h-0 py-1 sm:py-2">
+          <div className="space-y-3 px-2 my-2">
+            <div className="skeleton-line w-full h-2 sm:h-[7px] rounded-full" />
+            <div className="flex gap-2 sm:gap-3">
+              <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
+              <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
+              <div className="skeleton-line w-2/5 h-2 sm:h-[7px] rounded-full hidden sm:block" />
+            </div>
+            <div className="flex gap-2 sm:gap-3">
+              <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
+              <div className="skeleton-line w-1/3 h-2 sm:h-[7px] rounded-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Skeleton that mimics a chat conversation layout (user + assistant alternating) with input */
 export function ChatSkeleton({ count = 5 }: { count?: number }) {
-  // Each entry: [bubble width, ...line widths] — mimics natural user queries of varying length
   const userMsgs = [
     { bubble: "w-[75%] sm:w-[55%]", lines: ["100%", "82%"] },
     { bubble: "w-[85%] sm:w-[65%]", lines: ["100%"] },
@@ -50,101 +117,21 @@ export function ChatSkeleton({ count = 5 }: { count?: number }) {
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
-      {/* Message area — fills available space, pushes input to bottom */}
-      <div className="flex-1 overflow-hidden">
+      {/* Message area */}
+      <div className="flex-1 overflow-hidden space-y-3 sm:space-y-4">
         {Array.from({ length: count }).map((_, i) => {
           const msg = userMsgs[i % userMsgs.length];
           return (
             <div key={i}>
-              {/* ── User message ── matches UserMessageBubble structure exactly ── */}
-              <div className="w-full px-2 py-1.5 sm:px-4 mb-3 sm:mb-4">
-                <div className="mx-auto flex max-w-3xl lg:max-w-4xl xl:max-w-5xl justify-end px-2">
-                  <div
-                    className={`flex flex-col items-end max-w-[90%] ${msg.bubble}`}
-                  >
-                    <div
-                      className="rounded-3xl w-full px-5 py-2.5 shadow-sm border"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, var(--theme-primary-light), var(--theme-bg))",
-                        borderColor: "var(--theme-border)",
-                      }}
-                    >
-                      <div className="leading-[1.625] text-[15px] sm:text-base space-y-1.5">
-                        {msg.lines.map((w, li) => (
-                          <SkeletonLine key={li} width={w} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Assistant response ── matches ChatMessage structure ── */}
-              <div className="group w-full mb-3 sm:mb-4">
-                <div className="mx-auto flex flex-col max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 sm:px-6">
-                  <div className="min-w-0 min-h-0">
-                    {/* Avatar + Role label */}
-                    <div className="mb-3 flex items-center gap-2">
-                      <div className="skeleton-line size-7 rounded-full shrink-0" />
-                      <SkeletonLine
-                        width="w-16"
-                        className="!h-4 sm:!h-[18px]"
-                      />
-                    </div>
-                    {/* Response content skeleton — variable line pattern */}
-                    <div className="space-y-3 px-2 my-2">
-                      <div className="skeleton-line w-full h-2 sm:h-[7px] rounded-full" />
-                      <div className="flex gap-2 sm:gap-3">
-                        <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                        <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                        <div className="skeleton-line w-2/5 h-2 sm:h-[7px] rounded-full hidden sm:block" />
-                      </div>
-                      <div className="flex gap-2 sm:gap-3">
-                        <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                        <div className="skeleton-line w-1/3 h-2 sm:h-[7px] rounded-full" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <UserMessageSkeleton msg={msg} />
+              <AssistantMessageSkeleton />
             </div>
           );
         })}
       </div>
 
-      {/* ── ChatInput skeleton at bottom ── matches real ChatInput rounded-3xl container */}
-      <div className="shrink-0 sm:px-4 pb-3 pt-1">
-        <div className="mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-2">
-          <div
-            className="flex flex-col w-full rounded-3xl px-1 border"
-            style={{
-              backgroundColor: "var(--theme-bg-card)",
-              borderColor: "var(--theme-border)",
-              boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-            }}
-          >
-            {/* Textarea area — matches real min-h-[52px] + pt-2.5 */}
-            <div className="px-2.5 py-2 flex items-start gap-2">
-              <div className="skeleton-line h-3 w-3/5 rounded flex-1 pt-2.5 min-h-[52px]" />
-            </div>
-            {/* Bottom toolbar — matches real ChatInput toolbar layout */}
-            <div className="flex justify-between pt-3 pb-3 px-2 mx-0.5 max-w-full">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="skeleton-line size-8 rounded-full shrink-0" />
-                <div className="skeleton-line size-8 rounded-full shrink-0 hidden sm:block" />
-                <div className="skeleton-line size-8 rounded-full shrink-0 hidden sm:block" />
-                <div className="skeleton-line size-8 rounded-full shrink-0" />
-              </div>
-              <div className="skeleton-line size-8 rounded-full shrink-0" />
-            </div>
-          </div>
-          {/* Keyboard shortcut hint — desktop only, matches real ChatInput */}
-          <div className="hidden sm:flex mx-auto mt-3 px-2 max-w-3xl lg:max-w-4xl xl:max-w-5xl justify-center">
-            <SkeletonLine width="w-40" className="!h-3" />
-          </div>
-        </div>
-      </div>
+      {/* ChatInput skeleton at bottom */}
+      <ChatInputSkeleton />
     </div>
   );
 }
@@ -158,58 +145,13 @@ export function ChatSkeletonMessagesOnly({ count = 3 }: { count?: number }) {
   ];
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-3 sm:space-y-4">
       {Array.from({ length: count }).map((_, i) => {
         const msg = userMsgs[i % userMsgs.length];
         return (
           <div key={i}>
-            {/* User message */}
-            <div className="w-full px-2 py-1.5 sm:px-4 mb-3 sm:mb-4">
-              <div className="mx-auto flex max-w-3xl lg:max-w-4xl xl:max-w-5xl justify-end px-2">
-                <div
-                  className={`flex flex-col items-end max-w-[90%] ${msg.bubble}`}
-                >
-                  <div
-                    className="rounded-3xl w-full px-5 py-2.5 shadow-sm border"
-                    style={{
-                      background:
-                        "linear-gradient(135deg, var(--theme-primary-light), var(--theme-bg))",
-                      borderColor: "var(--theme-border)",
-                    }}
-                  >
-                    <div className="leading-[1.625] text-[15px] sm:text-base space-y-1.5">
-                      {msg.lines.map((w, li) => (
-                        <SkeletonLine key={li} width={w} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Assistant response */}
-            <div className="group w-full mb-3 sm:mb-4">
-              <div className="mx-auto flex flex-col max-w-3xl lg:max-w-4xl xl:max-w-5xl px-4 sm:px-6">
-                <div className="min-w-0 min-h-0">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="skeleton-line size-7 rounded-full shrink-0" />
-                    <SkeletonLine width="w-16" className="!h-4 sm:!h-[18px]" />
-                  </div>
-                  <div className="space-y-3 px-2 my-2">
-                    <div className="skeleton-line w-full h-2 sm:h-[7px] rounded-full" />
-                    <div className="flex gap-2 sm:gap-3">
-                      <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                      <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                      <div className="skeleton-line w-2/5 h-2 sm:h-[7px] rounded-full hidden sm:block" />
-                    </div>
-                    <div className="flex gap-2 sm:gap-3">
-                      <div className="skeleton-line flex-1 h-2 sm:h-[7px] rounded-full" />
-                      <div className="skeleton-line w-1/3 h-2 sm:h-[7px] rounded-full" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <UserMessageSkeleton msg={msg} />
+            <AssistantMessageSkeleton />
           </div>
         );
       })}
@@ -217,33 +159,70 @@ export function ChatSkeletonMessagesOnly({ count = 3 }: { count?: number }) {
   );
 }
 
+/** Shared ChatInput skeleton — matches real ChatInput rounded-3xl container + toolbar */
+function ChatInputSkeleton() {
+  return (
+    <div className="shrink-0 sm:px-4 pb-3 pt-1">
+      <div className="mx-auto max-w-3xl lg:max-w-4xl xl:max-w-5xl px-2">
+        <div
+          className="flex flex-col w-full rounded-3xl px-1 border"
+          style={{
+            backgroundColor: "var(--theme-bg-card)",
+            borderColor: "var(--theme-border)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+          }}
+        >
+          {/* Textarea area */}
+          <div className="px-2.5 pt-1 flex items-start gap-2">
+            <div className="skeleton-line h-3 w-3/5 rounded flex-1 pt-[10px] min-h-[40px] sm:min-h-[44px]" />
+          </div>
+          {/* Toolbar — matches real toolbar: gap-1 sm:gap-2 */}
+          <div className="flex justify-between flex-nowrap pt-3 pb-3 px-2 mx-0.5 max-w-full">
+            <div className="flex items-center gap-1 sm:gap-2 self-end flex-1 min-w-0">
+              <div className="skeleton-line h-8 w-8 rounded-lg shrink-0" />
+              <div className="skeleton-line h-8 w-8 rounded-lg shrink-0 hidden sm:block" />
+            </div>
+            <div className="self-end flex shrink-0">
+              <div className="skeleton-line size-8 rounded-full" />
+            </div>
+          </div>
+        </div>
+        {/* Keyboard shortcut hint — desktop only */}
+        <div className="hidden sm:flex mx-auto mt-3 px-2 max-w-3xl lg:max-w-4xl xl:max-w-5xl justify-center">
+          <SkeletonLine width="w-40" className="!h-3" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Skeleton for the welcome page (greeting + input + suggestions) */
 export function WelcomeSkeleton() {
   return (
-    <div className="relative flex h-full flex-col items-center justify-center px-4 overflow-hidden animate-fade-in">
-      {/* Greeting skeleton */}
-      <div className="relative flex flex-col items-center mb-4 sm:mb-8 w-full max-w-[90vw]">
-        {/* Mobile icon — matches WelcomePage: size-10 rounded-xl */}
-        <div className="sm:hidden mb-3">
-          <div className="skeleton-line size-10 rounded-xl shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40" />
+    <div className="welcome-root relative flex h-full flex-col items-center justify-center px-4 overflow-hidden animate-fade-in">
+      {/* Hero section */}
+      <div className="welcome-hero relative flex flex-col items-center mb-3 sm:mb-4 md:mb-5 xl:mb-6 2xl:mb-7 w-full max-w-[90vw]">
+        {/* Mobile icon */}
+        <div className="sm:hidden relative mb-3">
+          <div className="skeleton-line size-10 rounded-full shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40" />
         </div>
         {/* Greeting line — desktop icon inline */}
-        <div className="max-w-[90vw] w-full flex items-center justify-center gap-4">
-          <div className="skeleton-line size-12 rounded-full hidden sm:block shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40" />
+        <div className="max-w-[90vw] w-full flex items-center justify-center">
+          <div className="skeleton-line size-10 rounded-full hidden sm:inline-block shrink-0 shadow-md ring-1 ring-stone-200/60 dark:ring-stone-700/40 mr-4" />
           <SkeletonLine
-            width="w-48 sm:w-64 lg:w-80 xl:w-96"
-            className="!h-[1.65rem] sm:!h-8 md:!h-9 !rounded-lg"
+            width="w-48 sm:w-64 md:w-72 lg:w-80 xl:w-[22rem] 2xl:w-96"
+            className="!h-[1.65rem] sm:!h-8 md:!h-9 lg:!h-[2.35rem] xl:!h-[2.4rem] 2xl:!h-10 !rounded-lg"
           />
         </div>
         {/* Subtitle */}
         <SkeletonLine
-          width="w-36 sm:w-48 xl:w-56"
-          className="!h-3 sm:!h-4 mt-2 sm:mt-3 !rounded-lg"
+          width="w-36 sm:w-44 md:w-48 xl:w-56 2xl:w-60"
+          className="!h-3.5 sm:!h-4 md:!h-[17px] xl:!h-5 mt-2 sm:mt-3 md:mt-3.5 xl:mt-4 !rounded-lg"
         />
       </div>
 
-      {/* ChatInput skeleton — matches real ChatInput rounded-3xl container */}
-      <div className="w-full max-w-[48rem] lg:max-w-[52rem] xl:max-w-[56rem]">
+      {/* ChatInput skeleton */}
+      <div className="welcome-input w-full sm:max-w-[44rem] md:max-w-[46rem] lg:max-w-[48rem] xl:max-w-[50rem] 2xl:max-w-[52rem]">
         <div
           className="flex flex-col w-full rounded-3xl px-1 border"
           style={{
@@ -254,70 +233,54 @@ export function WelcomeSkeleton() {
         >
           {/* Textarea area */}
           <div className="px-2.5 py-2 flex items-start gap-2">
-            <div className="skeleton-line h-3 w-3/5 rounded flex-1 mt-3 min-h-[52px]" />
+            <div className="skeleton-line h-3 w-3/5 rounded flex-1 mt-3 min-h-[30px]" />
           </div>
-          {/* Bottom toolbar */}
-          <div className="flex justify-between pt-3 pb-3 px-2 mx-0.5 max-w-full">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <div className="skeleton-line size-8 rounded-full shrink-0" />
-              <div className="skeleton-line size-8 rounded-full shrink-0 hidden sm:block" />
-              <div className="skeleton-line size-8 rounded-full shrink-0 hidden sm:block" />
-              <div className="skeleton-line size-8 rounded-full shrink-0" />
+          {/* Toolbar */}
+          <div className="flex justify-between flex-nowrap pt-3 pb-3 px-2 mx-0.5 max-w-full">
+            <div className="flex items-center gap-1 sm:gap-2 self-end flex-1 min-w-0">
+              <div className="skeleton-line h-8 w-8 rounded-lg shrink-0" />
+              <div className="skeleton-line h-8 w-8 rounded-lg shrink-0 hidden sm:block" />
             </div>
-            <div className="skeleton-line size-8 rounded-full shrink-0" />
+            <div className="self-end flex shrink-0">
+              <div className="skeleton-line size-8 rounded-full" />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Suggestions skeleton — mobile: 2 cards, desktop: 4 cards */}
-      <div className="w-full px-2 sm:mt-5">
-        <div className="w-[19rem] sm:max-w-[36rem] lg:max-w-[48rem] xl:max-w-[56rem] sm:w-full mx-auto px-4 sm:px-8">
-          {/* Label + refresh */}
-          <div className="flex items-center justify-between mb-2 sm:mb-3">
-            <div className="flex items-center gap-1.5">
-              <div className="skeleton-line size-3 rounded-full" />
-              <SkeletonLine width="w-16" className="!h-3 sm:!h-3.5" />
+      {/* Suggestions skeleton */}
+      <div className="welcome-suggestions relative w-[78%] sm:max-w-[38rem] md:max-w-[40rem] lg:max-w-[42rem] xl:max-w-[44rem] 2xl:max-w-[46rem] px-2 sm:px-4 sm:mt-2 md:mt-3 xl:mt-4">
+        {/* Label + refresh */}
+        <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-3 xl:mb-4">
+          <div className="flex items-center gap-1">
+            <div className="skeleton-line size-3 rounded-full" />
+            <SkeletonLine width="w-16" className="!h-3 sm:!h-3.5 xl:!h-4" />
+          </div>
+          <SkeletonLine
+            width="w-20"
+            className="!h-7 !rounded-lg !text-[11px] sm:!text-xs"
+          />
+        </div>
+        {/* Suggestion grid — items >= 2 hidden on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 md:gap-2.5 xl:gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className={`welcome-card group relative flex items-center gap-2 sm:gap-3 md:gap-3 xl:gap-3.5 rounded-xl border px-3 py-2 sm:px-4 sm:py-3${
+                i >= 2 ? " hidden sm:flex" : ""
+              }`}
+              style={{
+                backgroundColor: "var(--theme-bg-card)",
+                borderColor: "var(--theme-border)",
+              }}
+            >
+              <div className="skeleton-line size-6 sm:size-7 xl:size-8 rounded-lg shrink-0" />
+              <SkeletonLine
+                width={i % 2 === 0 ? "w-3/4" : "w-4/5"}
+                className="!h-[12.5px] sm:!h-[13.5px] flex-1"
+              />
             </div>
-            <SkeletonLine width="w-20" className="!h-7 !rounded-lg" />
-          </div>
-          {/* Mobile: 2 cards */}
-          <div className="grid grid-cols-1 gap-2 sm:hidden">
-            {[0, 1].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-2 sm:gap-3 rounded-xl border px-3 py-2 sm:px-4 sm:py-3"
-                style={{
-                  backgroundColor: "var(--theme-bg-card)",
-                  borderColor: "var(--theme-border)",
-                }}
-              >
-                <div className="skeleton-line size-6 rounded-lg shrink-0" />
-                <SkeletonLine
-                  width={i === 0 ? "w-3/4" : "w-4/5"}
-                  className="!h-[12.5px] flex-1"
-                />
-              </div>
-            ))}
-          </div>
-          {/* Desktop: 2x2 grid */}
-          <div className="hidden sm:grid grid-cols-2 gap-2.5">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 rounded-xl border px-4 sm:px-8 py-3"
-                style={{
-                  backgroundColor: "var(--theme-bg-card)",
-                  borderColor: "var(--theme-border)",
-                }}
-              >
-                <div className="skeleton-line size-7 rounded-lg shrink-0" />
-                <SkeletonLine
-                  width={i % 2 === 0 ? "w-3/4" : "w-4/5"}
-                  className="!h-[13.5px] flex-1"
-                />
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
     </div>

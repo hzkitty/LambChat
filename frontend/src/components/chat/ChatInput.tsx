@@ -18,6 +18,11 @@ import { MentionPopup } from "./MentionPopup";
 import { ChatInputToolbar } from "./ChatInputToolbar";
 import { ChatInputSelectors } from "./ChatInputSelectors";
 import { getMentionPopupFixedPlacement } from "./chatInputViewport";
+import {
+  consumePendingSelectionActionPrompt,
+  SELECTION_ACTION_EVENT,
+  type SelectionActionEventDetail,
+} from "../common/selectionActionPopover";
 import type { FeaturePanel } from "../selectors/FeatureMenu";
 import type {
   ToolState,
@@ -209,6 +214,41 @@ export const ChatInput = memo(function ChatInput({
       setMentionResultCount(mentionSearch.presets.length);
     }
   }, [mention.isActive, mentionSearch.presets.length, setMentionResultCount]);
+
+  useEffect(() => {
+    const applySelectionActionPrompt = (prompt: string) => {
+      setInput((previous) => {
+        const next = previous.trim()
+          ? `${previous.trim()}\n\n${prompt}`
+          : prompt;
+        setCursorPosition(next.length);
+        requestAnimationFrame(() => {
+          const textarea = textareaRef.current;
+          if (!textarea) return;
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = next.length;
+          scheduleTextareaResize();
+        });
+        return next;
+      });
+    };
+
+    const pendingPrompt = consumePendingSelectionActionPrompt();
+    if (pendingPrompt) {
+      applySelectionActionPrompt(pendingPrompt);
+    }
+
+    const handleSelectionAction = (event: Event) => {
+      const detail = (event as CustomEvent<SelectionActionEventDetail>).detail;
+      if (!detail?.prompt) return;
+      applySelectionActionPrompt(detail.prompt);
+    };
+
+    window.addEventListener(SELECTION_ACTION_EVENT, handleSelectionAction);
+    return () => {
+      window.removeEventListener(SELECTION_ACTION_EVENT, handleSelectionAction);
+    };
+  }, [scheduleTextareaResize]);
 
   useEffect(() => {
     if (!mention.isActive) {

@@ -245,7 +245,7 @@ function ProjectRow({
     <button
       type="button"
       onClick={() => onOpenPreview?.(artifact.preview, "manual")}
-      className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-1 py-2.5 text-left transition-colors hover:bg-[var(--theme-primary-light)]"
+      className="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-[var(--theme-primary-light)]"
     >
       <span className="flex items-center justify-center size-10 rounded-xl shrink-0 bg-blue-100 dark:bg-blue-900/40 transition-transform duration-200 group-hover:scale-105">
         <Icon
@@ -306,7 +306,7 @@ function SectionTitle({
   count: number;
 }) {
   return (
-    <div className="flex items-center gap-2.5 px-1 pt-2 pb-1.5">
+    <div className="flex items-center gap-2.5 px-3 pt-2 pb-1.5">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--theme-text-secondary)]">
         {children}
       </span>
@@ -455,7 +455,7 @@ export function RevealArtifactsSummary({
           </div>
         </div>
         <div className="relative z-10 flex shrink-0 items-center gap-1">
-          <span className="rounded-lg bg-[var(--theme-primary-light)] px-3 py-1.5 text-xs font-medium text-[var(--theme-primary)] ring-1 ring-[var(--theme-border)] transition-colors group-hover:bg-[var(--theme-primary)] group-hover:text-white group-hover:ring-transparent">
+          <span className="rounded-lg bg-[var(--theme-primary-light)] px-3 py-1.5 text-xs font-medium text-[var(--theme-primary)] ring-1 ring-[var(--theme-border)] transition-colors group-hover:bg-[var(--theme-primary)]/15 group-hover:ring-[var(--theme-primary)]/30">
             {t("project.preview", "预览")}
           </span>
         </div>

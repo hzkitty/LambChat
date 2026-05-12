@@ -4,7 +4,7 @@ import test from "node:test";
 
 test("attachment preview host is mounted at ChatView level", () => {
   const chatViewSource = readFileSync(
-    new URL("../layout/AppContent/ChatView.tsx", import.meta.url),
+    new URL("../../layout/AppContent/ChatView.tsx", import.meta.url),
     "utf8",
   );
 
@@ -12,5 +12,18 @@ test("attachment preview host is mounted at ChatView level", () => {
     chatViewSource,
     /<AttachmentPreviewHost\s*\/>/,
     "ChatView should mount a global attachment preview host outside ChatInput",
+  );
+});
+
+test("attachment preview host fills the mobile viewport", () => {
+  const attachmentPreviewHostSource = readFileSync(
+    new URL("../AttachmentPreviewHost.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    attachmentPreviewHostSource,
+    /<LazyDocumentPreview[\s\S]*?\bmobileFillViewport\b[\s\S]*?\/>/,
+    "Uploaded attachment previews should use the full mobile viewport",
   );
 });

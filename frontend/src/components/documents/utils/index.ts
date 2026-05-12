@@ -20,12 +20,16 @@ export {
   isPptxFile,
   isLegacyPptFile,
   isLegacyDocFile,
+  isCadFile,
+  isDxfFile,
+  isDwgFile,
   isHtmlFile,
   isPreviewableFile,
   isCodeFile,
   isMarkdownFile,
   isExcalidrawFile,
   isFileLink,
+  getFileLinkInfo,
 } from "./fileTypeChecks";
 export type { FileLinkInfo } from "./fileTypeChecks";
 

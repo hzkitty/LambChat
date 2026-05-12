@@ -28,6 +28,7 @@ import {
   BookOpen,
   StickyNote,
   File,
+  DraftingCompass,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { defaultStyles, Type } from "react-file-icon";
@@ -676,6 +677,24 @@ const FILE_TYPE_CONFIGS: ExtConfig[] = [
     category: "presentation",
   },
 
+  // ===== CAD =====
+  {
+    ext: "dxf",
+    icon: DraftingCompass,
+    color: "text-cyan-600 dark:text-cyan-400",
+    bg: "bg-cyan-100 dark:bg-cyan-900/40",
+    label: "DXF",
+    category: "document",
+  },
+  {
+    ext: "dwg",
+    icon: DraftingCompass,
+    color: "text-slate-600 dark:text-slate-400",
+    bg: "bg-slate-100 dark:bg-slate-900/40",
+    label: "DWG",
+    category: "document",
+  },
+
   // ===== 压缩包 =====
   {
     ext: "zip",
@@ -913,6 +932,15 @@ export const MIME_TO_EXT: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     "pptx",
   "application/vnd.oasis.opendocument.presentation": "odp",
+  // CAD
+  "image/vnd.dxf": "dxf",
+  "application/dxf": "dxf",
+  "application/x-dxf": "dxf",
+  "application/acad": "dwg",
+  "application/x-acad": "dwg",
+  "application/autocad_dwg": "dwg",
+  "application/dwg": "dwg",
+  "application/x-dwg": "dwg",
   // 压缩包
   "application/zip": "zip",
   "application/x-rar-compressed": "rar",

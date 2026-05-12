@@ -2,81 +2,21 @@ import { SkeletonLine } from "./primitives";
 import { PanelHeaderSkeleton } from "./PanelHeaderSkeleton";
 
 /* ═══════════════════════════════════════════════════════
-   Panel-specific skeletons
+   Panel-specific skeletons — updated to match latest layouts
    ═══════════════════════════════════════════════════════ */
 
-/** Skills panel: card grid with tags */
+/** Skills panel: card grid matching SkillBaseCard (.scb) structure */
 export function SkillsPanelSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-4 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col gap-4 animate-fade-in">
       <PanelHeaderSkeleton />
-      <div className="flex-1 overflow-y-auto min-h-0 p-2 sm:p-4 xl:p-6">
-        <div className="grid auto-grid-cols gap-4 xl:gap-5">
+      <div className="skill-content-area flex-1 overflow-y-auto py-2 sm:py-4 px-4">
+        <div className="skill-grid grid auto-grid-cols gap-4">
           {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="panel-card flex flex-col p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-2 sm:gap-3">
-                <div className="flex-1 min-w-0">
-                  <SkeletonLine
-                    width={i % 2 === 0 ? "w-3/4" : "w-1/2"}
-                    className="!h-[16px] sm:!h-[18px]"
-                  />
-                  <SkeletonLine
-                    width="w-16 sm:w-20"
-                    className="!h-4 sm:!h-5 mt-1.5 sm:mt-2 !rounded-full"
-                  />
-                </div>
-              </div>
-              <div className="mt-2 space-y-1.5">
-                <SkeletonLine width="w-full" className="!h-2.5 sm:!h-3" />
-                <SkeletonLine
-                  width={i % 2 === 0 ? "w-5/6" : "w-2/3"}
-                  className="!h-2.5 sm:!h-3"
-                />
-              </div>
-              <div className="mt-3 sm:mt-4 flex flex-wrap gap-1.5 sm:gap-2">
-                <SkeletonLine
-                  width="w-14 sm:w-16"
-                  className="!h-4 sm:!h-5 !rounded-full"
-                />
-                <SkeletonLine
-                  width="w-20 sm:w-24"
-                  className="!h-4 sm:!h-5 !rounded-full"
-                />
-              </div>
-              <div className="mt-2.5 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2">
-                <SkeletonLine
-                  width="w-12 sm:w-14"
-                  className="!h-4 sm:!h-5 !rounded-full"
-                />
-                <SkeletonLine
-                  width="w-14 sm:w-18"
-                  className="!h-4 sm:!h-5 !rounded-full"
-                />
-                <SkeletonLine
-                  width="w-10 sm:w-12"
-                  className="!h-4 sm:!h-5 !rounded-full"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Marketplace panel: card grid with gradient banners */
-export function MarketplacePanelSkeleton() {
-  return (
-    <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
-      <PanelHeaderSkeleton />
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 xl:p-8">
-        <div className="grid auto-grid-cols gap-5">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="panel-card overflow-hidden !p-0">
-              {/* Gradient banner */}
+            <div key={i} className="scb">
+              {/* Banner */}
               <div
-                className="h-10 sm:h-12 w-full"
+                className="h-12 w-full shrink-0 relative"
                 style={{
                   background: `linear-gradient(135deg, ${
                     [
@@ -87,18 +27,86 @@ export function MarketplacePanelSkeleton() {
                   }, var(--theme-bg-card))`,
                 }}
               />
-              <div className="p-3 sm:p-4">
-                <div className="flex items-start gap-2.5 sm:gap-3">
-                  {/* Avatar overlapping banner */}
-                  <div
-                    className="skeleton-line size-8 sm:size-10 rounded-xl shrink-0 -mt-5 sm:-mt-6 ring-2"
-                    style={
-                      {
-                        "--tw-ring-color": "var(--theme-bg-card)",
-                      } as React.CSSProperties
-                    }
+              {/* Card body */}
+              <div className="flex flex-1 flex-col -mt-3 pt-5 p-4">
+                {/* Icon + name */}
+                <div className="flex items-start gap-3">
+                  <div className="scb__icon-ring shrink-0 skeleton-line" />
+                  <div className="min-w-0 flex-1">
+                    <SkeletonLine
+                      width={i % 2 === 0 ? "w-3/4" : "w-1/2"}
+                      className="!h-4"
+                    />
+                  </div>
+                </div>
+                {/* Status pill */}
+                <div className="mt-1.5 sm:mt-2">
+                  <SkeletonLine
+                    width="w-14 sm:w-16"
+                    className="!h-4 !rounded-full"
                   />
-                  <div className="flex-1 min-w-0">
+                </div>
+                {/* Description */}
+                <div className="mt-3 space-y-1.5">
+                  <SkeletonLine width="w-full" className="!h-2.5 sm:!h-3" />
+                  <SkeletonLine
+                    width={i % 2 === 0 ? "w-5/6" : "w-2/3"}
+                    className="!h-2.5 sm:!h-3"
+                  />
+                </div>
+                {/* Tags */}
+                <div className="mt-3 flex flex-wrap gap-1.5 sm:gap-2">
+                  <SkeletonLine
+                    width="w-14 sm:w-16"
+                    className="!h-4 sm:!h-5 !rounded-full"
+                  />
+                  <SkeletonLine
+                    width="w-20 sm:w-24"
+                    className="!h-4 sm:!h-5 !rounded-full"
+                  />
+                  <SkeletonLine
+                    width="w-12 sm:w-14"
+                    className="!h-4 sm:!h-5 !rounded-full"
+                  />
+                </div>
+                <div className="flex-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Marketplace panel: card grid matching SkillBaseCard (.scb) structure */
+export function MarketplacePanelSkeleton() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-4 animate-fade-in">
+      <PanelHeaderSkeleton />
+      <div className="skill-content-area flex-1 overflow-y-auto py-2 sm:py-4 px-4 sm:p-6">
+        <div className="grid auto-grid-cols gap-5">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="scb">
+              {/* Banner */}
+              <div
+                className="h-12 w-full shrink-0 relative"
+                style={{
+                  background: `linear-gradient(135deg, ${
+                    [
+                      "var(--theme-primary-light)",
+                      "color-mix(in srgb, var(--theme-primary-light) 60%, var(--theme-bg))",
+                      "var(--theme-bg-card)",
+                    ][i % 3]
+                  }, var(--theme-bg-card))`,
+                }}
+              />
+              {/* Card body */}
+              <div className="flex flex-1 flex-col -mt-3 pt-5 p-3 sm:p-4">
+                <div className="flex items-start gap-2.5 sm:gap-3">
+                  {/* Icon overlapping banner */}
+                  <div className="scb__icon-ring shrink-0 skeleton-line" />
+                  <div className="min-w-0 flex-1">
                     <SkeletonLine
                       width={i % 3 === 0 ? "w-3/4" : "w-1/2"}
                       className="!h-[15px] sm:!h-[16px]"
@@ -123,6 +131,7 @@ export function MarketplacePanelSkeleton() {
                     <div className="skeleton-line size-7 rounded-lg" />
                   </div>
                 </div>
+                <div className="flex-1" />
               </div>
             </div>
           ))}
@@ -137,13 +146,13 @@ export function UsersPanelSkeleton() {
   return (
     <div className="flex h-full flex-col gap-4 animate-fade-in">
       <PanelHeaderSkeleton />
-      <div className="flex-1 overflow-y-auto min-h-0 p-3 sm:p-6 xl:p-8">
+      <div className="flex-1 overflow-y-auto min-h-0 py-2 sm:py-4 px-4">
         {/* Desktop table */}
         <div className="hidden sm:block">
-          <div className="panel-card !p-0 overflow-hidden">
+          <div className="glass-card rounded-xl !p-0 overflow-hidden">
             {/* Table header */}
             <div
-              className="flex items-center gap-4 px-4 py-3"
+              className="flex items-center gap-4 px-6 py-3"
               style={{
                 backgroundColor:
                   "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
@@ -162,8 +171,11 @@ export function UsersPanelSkeleton() {
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 px-4 py-3"
-                style={{ borderTop: "1px solid var(--theme-border)" }}
+                className="flex items-center gap-4 px-6 py-4"
+                style={{
+                  borderTop:
+                    "1px solid var(--glass-border, var(--theme-border))",
+                }}
               >
                 <div className="flex items-center gap-3 w-28 xl:w-32 shrink-0">
                   <div className="skeleton-line size-8 rounded-full shrink-0" />
@@ -193,10 +205,10 @@ export function UsersPanelSkeleton() {
           </div>
         </div>
         {/* Mobile cards */}
-        <div className="space-y-2.5 sm:hidden">
+        <div className="space-y-3 sm:hidden">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="panel-card p-3.5">
-              <div className="flex items-center gap-3">
+            <div key={i} className="glass-card rounded-xl p-4">
+              <div className="flex items-start gap-3">
                 <div className="skeleton-line size-10 rounded-full shrink-0" />
                 <div className="flex-1 min-w-0">
                   <SkeletonLine
@@ -207,12 +219,13 @@ export function UsersPanelSkeleton() {
                 </div>
                 <div className="skeleton-line size-7 rounded-lg shrink-0" />
               </div>
-              <div className="mt-3 flex items-center justify-between">
-                <div className="flex gap-1.5">
-                  <SkeletonLine width="w-14" className="!h-5 !rounded-full" />
-                  <SkeletonLine width="w-16" className="!h-5 !rounded-full" />
-                </div>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <SkeletonLine width="w-14" className="!h-5 !rounded-full" />
                 <SkeletonLine width="w-16" className="!h-5 !rounded-full" />
+              </div>
+              <div className="mt-3 flex items-center justify-between">
+                <SkeletonLine width="w-16" className="!h-5 !rounded-full" />
+                <SkeletonLine width="w-20" className="!h-3" />
               </div>
             </div>
           ))}
@@ -230,13 +243,13 @@ export function RolesPanelSkeleton() {
       <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 xl:p-8">
         <div className="grid gap-4 xl:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="panel-card !p-4">
+            <div key={i} className="glass-card rounded-xl p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   {/* Icon + name row */}
                   <div className="flex items-center gap-2">
                     <div
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
                       style={{
                         backgroundColor:
                           "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
@@ -249,12 +262,6 @@ export function RolesPanelSkeleton() {
                         width={i % 2 === 0 ? "w-20 sm:w-28" : "w-28 sm:w-36"}
                         className="!h-[15px] sm:!h-[16px]"
                       />
-                      {i === 0 && (
-                        <SkeletonLine
-                          width="w-16 sm:w-20"
-                          className="!h-4 sm:!h-5 !rounded-md ml-2"
-                        />
-                      )}
                     </div>
                   </div>
                   <SkeletonLine
@@ -312,9 +319,9 @@ export function MCPPanelSkeleton() {
   return (
     <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
       <PanelHeaderSkeleton />
-      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 xl:p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 space-y-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="panel-card !p-4">
+          <div key={i} className="panel-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 {/* Server name + status badges */}
@@ -333,7 +340,7 @@ export function MCPPanelSkeleton() {
                     className="!h-4 sm:!h-5 !rounded-full"
                   />
                 </div>
-                {/* URL row */}
+                {/* URL/command row */}
                 <div className="mt-1.5 sm:mt-2">
                   <SkeletonLine
                     width="w-3/5"
@@ -353,6 +360,13 @@ export function MCPPanelSkeleton() {
                 <div className="skeleton-line size-7 sm:size-8 rounded-lg hidden sm:block" />
               </div>
             </div>
+            {/* Expandable tools hint */}
+            <div
+              className="mt-3 pt-2 border-t"
+              style={{ borderColor: "var(--theme-border)" }}
+            >
+              <SkeletonLine width="w-16" className="!h-2.5 !opacity-40" />
+            </div>
           </div>
         ))}
       </div>
@@ -365,39 +379,39 @@ export function FeedbackPanelSkeleton() {
   return (
     <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
       <PanelHeaderSkeleton hasSearch={false} />
-      <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 xl:p-8">
-        {/* Stats grid — matches glass-card style */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="glass-card rounded-xl p-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                  style={{
-                    backgroundColor:
-                      "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
-                  }}
-                >
-                  <div className="skeleton-line size-6 rounded-md" />
-                </div>
-                <div className="min-w-0">
-                  <SkeletonLine
-                    width="w-10 sm:w-12"
-                    className="!h-2.5 sm:!h-3"
-                  />
-                  <SkeletonLine
-                    width="w-6 sm:w-8"
-                    className="!h-5 sm:!h-6 mt-1"
-                  />
-                </div>
+
+      {/* Stats section */}
+      <div className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-4 sm:gap-4 sm:px-6">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="glass-card rounded-xl p-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                style={{
+                  backgroundColor:
+                    "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
+                }}
+              >
+                <div className="skeleton-line size-6 rounded-md" />
+              </div>
+              <div className="min-w-0">
+                <SkeletonLine width="w-10 sm:w-12" className="!h-2.5 sm:!h-3" />
+                <SkeletonLine
+                  width="w-6 sm:w-8"
+                  className="!h-5 sm:!h-6 mt-1"
+                />
               </div>
             </div>
-          ))}
-        </div>
-        {/* Feedback list */}
-        <div className="space-y-3 xl:space-y-4">
+          </div>
+        ))}
+      </div>
+
+      {/* Feedback list */}
+      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 sm:px-6">
+        {/* Desktop */}
+        <div className="hidden space-y-3 sm:block">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="panel-card !p-4 sm:!p-5">
+            <div key={i} className="glass-card rounded-xl p-5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <div className="skeleton-line size-9 sm:size-10 rounded-full shrink-0" />
@@ -424,6 +438,33 @@ export function FeedbackPanelSkeleton() {
             </div>
           ))}
         </div>
+        {/* Mobile */}
+        <div className="space-y-3 sm:hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="glass-card rounded-xl p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="skeleton-line size-9 rounded-full shrink-0" />
+                  <div className="min-w-0">
+                    <SkeletonLine
+                      width={i % 2 === 0 ? "w-16" : "w-20"}
+                      className="!h-3.5"
+                    />
+                    <SkeletonLine
+                      width="w-28"
+                      className="!h-2.5 !mt-1 !opacity-50"
+                    />
+                  </div>
+                </div>
+                <SkeletonLine
+                  width="w-12"
+                  className="!h-5 !rounded-full shrink-0"
+                />
+              </div>
+              <SkeletonLine width="w-3/4" className="!h-2.5 mt-2" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -434,9 +475,9 @@ export function ChannelsPanelSkeleton() {
   return (
     <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
       <PanelHeaderSkeleton hasSearch={false} />
-      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 xl:p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 space-y-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="panel-card !p-4">
+          <div key={i} className="glass-card rounded-xl p-4">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div
                 className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-xl"
@@ -445,7 +486,7 @@ export function ChannelsPanelSkeleton() {
                     "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
                 }}
               >
-                <div className="skeleton-line size-[18px] sm:size-5 rounded-md" />
+                <div className="skeleton-line size-5 rounded-md" />
               </div>
               <div className="flex-1 min-w-0">
                 <SkeletonLine
@@ -469,40 +510,45 @@ export function ChannelsPanelSkeleton() {
 /** Agent panel: agent list cards with tab switcher */
 export function AgentPanelSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 animate-fade-in">
       <PanelHeaderSkeleton hasSearch={false} />
-      {/* Tab switcher */}
-      <div
-        className="flex gap-1 p-1 rounded-lg border w-fit"
-        style={{ borderColor: "var(--theme-border)" }}
-      >
-        <SkeletonLine
-          width="w-16 sm:w-20"
-          className="!h-7 sm:!h-8 !rounded-md"
-        />
-        <SkeletonLine
-          width="w-12 sm:w-16"
-          className="!h-7 sm:!h-8 !rounded-md"
-        />
+      {/* Tab bar — matches glass-divider + tab buttons */}
+      <div className="glass-divider flex px-2">
+        <div className="px-4 py-3.5">
+          <SkeletonLine width="w-16 sm:w-20" className="!h-4" />
+          {/* Active indicator */}
+          <div className="absolute bottom-0 left-3 right-3 h-0.5 rounded-full skeleton-line" />
+        </div>
+        <div className="px-4 py-3.5">
+          <SkeletonLine width="w-12 sm:w-16" className="!h-4 !opacity-50" />
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 xl:px-8 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 space-y-5">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="panel-card flex items-center gap-3.5 !p-4">
-            <div
-              className="flex size-11 shrink-0 items-center justify-center rounded-xl"
-              style={{
-                backgroundColor:
-                  "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
-              }}
-            >
-              <div className="skeleton-line size-[18px] sm:size-5 rounded-md" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <SkeletonLine
-                width={i % 2 === 0 ? "w-20 sm:w-28" : "w-28 sm:w-36"}
-                className="!h-[13px] sm:!h-[14px]"
-              />
-              <SkeletonLine width="w-3/5" className="!h-2.5 sm:!h-3 mt-1" />
+          <div
+            key={i}
+            className="glass-card rounded-xl p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+              <div
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl ring-1"
+                style={{
+                  backgroundColor:
+                    "var(--glass-bg-subtle, color-mix(in srgb, var(--theme-bg) 80%, white))",
+                }}
+              >
+                <div className="skeleton-line size-5 rounded-md" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <SkeletonLine
+                  width={i % 2 === 0 ? "w-20 sm:w-28" : "w-28 sm:w-36"}
+                  className="!h-[13px] sm:!h-[14px]"
+                />
+                <SkeletonLine
+                  width="w-3/5"
+                  className="!h-2.5 sm:!h-3 mt-1 hidden sm:block"
+                />
+              </div>
             </div>
             <div className="skeleton-line w-8 sm:w-10 h-4 sm:h-5 rounded-full shrink-0" />
           </div>
@@ -515,29 +561,34 @@ export function AgentPanelSkeleton() {
 /** Model panel: model config rows with tab switcher */
 export function ModelPanelSkeleton() {
   return (
-    <div className="flex h-full flex-col gap-3 sm:gap-4 animate-fade-in">
+    <div className="flex h-full min-h-0 flex-col gap-3 sm:gap-4 animate-fade-in">
       <PanelHeaderSkeleton hasSearch={false} />
-      {/* Tab switcher */}
-      <div
-        className="flex gap-1 p-1 rounded-lg border w-fit"
-        style={{ borderColor: "var(--theme-border)" }}
-      >
-        <SkeletonLine
-          width="w-14 sm:w-16"
-          className="!h-7 sm:!h-8 !rounded-md"
-        />
-        <SkeletonLine
-          width="w-20 sm:w-28"
-          className="!h-7 sm:!h-8 !rounded-md"
-        />
+      {/* Tab bar — matches glass-tab-bar */}
+      <div className="glass-tab-bar flex px-4 sm:px-6">
+        <div className="px-5 py-3">
+          <SkeletonLine width="w-14 sm:w-16" className="!h-4" />
+          <div className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full skeleton-line" />
+        </div>
+        <div className="px-5 py-3">
+          <SkeletonLine width="w-20 sm:w-28" className="!h-4 !opacity-50" />
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 xl:px-8 sm:py-5 space-y-1">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5 space-y-3">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="skeleton-line h-8 w-20 rounded-lg" />
+            <div className="skeleton-line h-8 w-16 rounded-lg hidden sm:block" />
+          </div>
+          <div className="skeleton-line h-8 w-20 rounded-lg" />
+        </div>
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="panel-card !p-0">
-            <div className="flex items-center justify-between p-3 sm:p-4 gap-2">
+          <div key={i} className="glass-card rounded-xl">
+            {/* Desktop row */}
+            <div className="hidden sm:flex items-center justify-between p-4 gap-2">
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <div className="skeleton-line size-4 sm:size-5 rounded shrink-0" />
-                <div className="skeleton-line size-5 sm:size-6 rounded shrink-0" />
+                <div className="skeleton-line size-4 rounded shrink-0" />
+                <div className="skeleton-line size-5 rounded shrink-0" />
                 <div className="flex-1 min-w-0">
                   <SkeletonLine
                     width={i % 2 === 0 ? "w-24 sm:w-32" : "w-20 sm:w-28"}
@@ -548,7 +599,21 @@ export function ModelPanelSkeleton() {
               <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <div className="skeleton-line w-8 sm:w-10 h-4 sm:h-5 rounded-full" />
                 <div className="skeleton-line size-7 sm:size-8 rounded-lg" />
-                <div className="skeleton-line size-7 sm:size-8 rounded-lg hidden sm:block" />
+                <div className="skeleton-line size-7 sm:size-8 rounded-lg" />
+              </div>
+            </div>
+            {/* Mobile row */}
+            <div className="block sm:hidden p-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="skeleton-line size-4 rounded shrink-0" />
+                  <div className="skeleton-line size-5 rounded shrink-0" />
+                  <SkeletonLine
+                    width={i % 2 === 0 ? "w-24" : "w-20"}
+                    className="!h-[13px]"
+                  />
+                </div>
+                <div className="skeleton-line w-8 h-4 rounded-full shrink-0" />
               </div>
             </div>
           </div>

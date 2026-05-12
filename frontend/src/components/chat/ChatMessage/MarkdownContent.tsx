@@ -13,7 +13,7 @@ import { MermaidDiagram } from "./MermaidDiagram";
 import { DeferredCodeMirrorViewer } from "../../common/DeferredCodeMirrorViewer";
 import { ImageViewer } from "../../common";
 import { createHeadingAnchorId } from "../../layout/AppContent/messageOutline";
-import { isFileLink } from "../../documents/utils";
+import { getFileLinkInfo } from "../../documents/utils";
 import { setActiveRevealPreviewState } from "./items/activeRevealPreviewStore";
 import { createActiveRevealPreviewState } from "./items/revealPreviewState";
 
@@ -383,7 +383,10 @@ export const MarkdownContent = memo(function MarkdownContent({
           // Links with hover effects
           a: ({ href, children }) => {
             if (href) {
-              const fileLinkInfo = isFileLink(href);
+              const fileLinkInfo = getFileLinkInfo(
+                href,
+                extractNodeText(children),
+              );
               if (fileLinkInfo.isFile) {
                 return (
                   <a

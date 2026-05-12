@@ -21,27 +21,37 @@ function SidebarRailSkeleton() {
       className="hidden sm:flex h-full relative shrink-0 overflow-hidden"
       style={{ width: "var(--sidebar-rail-width)" }}
     >
-      <nav className="absolute inset-0 flex h-full w-full flex-col items-start bg-[var(--theme-bg-sidebar)] border-r border-stone-200/60 dark:border-stone-800/60">
+      <nav
+        className="absolute inset-0 flex h-full w-full flex-col items-start select-none"
+        style={{
+          backgroundColor: "var(--theme-bg-sidebar)",
+          borderColor: "var(--theme-border)",
+          borderRight: "1px solid",
+        }}
+      >
         {/* Expand button area */}
-        <div className="h-11 flex items-center justify-center w-full pt-3">
-          <div className="skeleton-line size-9 rounded-lg mx-2" />
+        <div className="flex items-center justify-center w-full pt-3">
+          <div className="skeleton-line size-9 rounded-full mx-2" />
         </div>
 
-        {/* Action icons */}
-        <div className="mt-3 flex flex-col items-center w-full gap-px space-y-1">
-          <div className="skeleton-line size-9 rounded-lg mx-2" />
-          <div className="skeleton-line size-9 rounded-lg mx-2" />
-          <div className="skeleton-line size-9 rounded-lg mx-2" />
-          <div className="skeleton-line size-9 rounded-lg mx-2" />
+        {/* Action icons — matches real rail: NewChat, Search, PersonaPlaza, FileLibrary, RecentChats */}
+        <div className="mt-3 flex-1 min-h-0 overflow-y-auto flex flex-col items-center w-full space-y-1">
+          <div className="skeleton-line size-9 rounded-full mx-2" />
+          <div className="skeleton-line size-9 rounded-full mx-2" />
+          <div className="skeleton-line size-9 rounded-full mx-2" />
+          <div className="skeleton-line size-9 rounded-full mx-2" />
+          <div className="skeleton-line size-9 rounded-full mx-2" />
         </div>
-
-        <div className="flex-grow" />
 
         {/* Profile avatar */}
-        <div className="shrink-0 px-2 py-4 border-t border-stone-200/60 dark:border-stone-800/60">
-          <div className="flex items-center justify-center w-full py-[11px]">
-            <div className="skeleton-line size-8 rounded-full shrink-0" />
-          </div>
+        <div
+          className="shrink-0 py-4 w-full flex flex-col items-center"
+          style={{
+            borderTop:
+              "1px solid color-mix(in srgb, var(--theme-border) 60%, transparent)",
+          }}
+        >
+          <div className="skeleton-line size-8 rounded-full" />
         </div>
       </nav>
     </div>
@@ -68,23 +78,28 @@ function SidebarExpandedSkeleton() {
         <div className="skeleton-line size-8 rounded-lg shrink-0" />
       </div>
 
-      {/* Action buttons — New Chat, Search, File Library */}
+      {/* Action buttons — NewChat, Search, PersonaPlaza, FileLibrary, More */}
       <div className="flex flex-col gap-px px-2 py-2 space-y-1">
         {/* New Chat */}
         <div className="w-full h-9 rounded-[10px] flex items-center gap-3 px-[9px]">
-          <div className="skeleton-line size-[18px] rounded-md shrink-0" />
+          <div className="skeleton-line size-5 rounded-md shrink-0" />
           <div className="skeleton-line h-3.5 w-16 rounded-md" />
         </div>
-        {/* Search with badge */}
+        {/* Search */}
         <div className="w-full h-9 rounded-[10px] flex items-center gap-3 px-[9px]">
-          <div className="skeleton-line size-[18px] rounded-md shrink-0" />
+          <div className="skeleton-line size-5 rounded-md shrink-0" />
           <div className="skeleton-line h-3.5 w-14 rounded-md flex-1" />
           <div className="skeleton-line h-4 w-10 rounded-md" />
         </div>
+        {/* Persona Plaza */}
+        <div className="w-full h-9 rounded-[10px] flex items-center gap-3 px-[9px]">
+          <div className="skeleton-line size-5 rounded-md shrink-0" />
+          <div className="skeleton-line h-3.5 w-20 rounded-md" />
+        </div>
         {/* File Library */}
         <div className="w-full h-9 rounded-[10px] flex items-center gap-3 px-[9px]">
-          <div className="skeleton-line size-[18px] rounded-md shrink-0" />
-          <div className="skeleton-line h-3.5 w-20 rounded-md" />
+          <div className="skeleton-line size-5 rounded-md shrink-0" />
+          <div className="skeleton-line h-3.5 w-16 rounded-md" />
         </div>
       </div>
 
@@ -95,14 +110,14 @@ function SidebarExpandedSkeleton() {
           <div className="skeleton-line h-3 w-16 rounded-md" />
           <div className="skeleton-line size-3.5 rounded-sm shrink-0" />
         </div>
-        {/* Project group */}
+        {/* Project items */}
         <div className="space-y-px">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
               className="flex items-center gap-3 px-[9px] h-10 rounded-[10px]"
             >
-              <div className="skeleton-line size-[18px] rounded shrink-0" />
+              <div className="skeleton-line size-5 rounded shrink-0" />
               <div
                 className="skeleton-line h-[13px] rounded-md flex-1"
                 style={{ width: i === 0 ? "75%" : i === 1 ? "60%" : "85%" }}
@@ -111,8 +126,17 @@ function SidebarExpandedSkeleton() {
           ))}
         </div>
 
+        {/* Separator */}
+        <div
+          className="h-px my-1"
+          style={{
+            backgroundColor:
+              "color-mix(in srgb, var(--theme-border) 60%, transparent)",
+          }}
+        />
+
         {/* Section header — Chats */}
-        <div className="mt-2 flex items-center justify-between px-[9px] h-9">
+        <div className="mt-1 flex items-center justify-between px-[9px] h-9">
           <div className="skeleton-line h-3 w-12 rounded-md" />
           <div className="skeleton-line size-3.5 rounded-sm shrink-0" />
         </div>
@@ -136,10 +160,20 @@ function SidebarExpandedSkeleton() {
       </div>
 
       {/* Bottom user area */}
-      <div className="shrink-0 px-2 py-1 border-t border-stone-200/60 dark:border-stone-800/60">
+      <div
+        className="shrink-0 px-2 py-1"
+        style={{
+          borderTop:
+            "1px solid color-mix(in srgb, var(--theme-border) 60%, transparent)",
+        }}
+      >
         <div className="flex items-center gap-3 px-2 py-3 rounded-xl">
-          <div className="skeleton-line size-8 rounded-full shrink-0" />
-          <div className="skeleton-line h-3.5 w-16 rounded-md" />
+          <div className="skeleton-line size-8 rounded-full shrink-0 ring-1 ring-stone-200" />
+          <div className="flex-1 min-w-0">
+            <div className="skeleton-line h-3.5 w-16 rounded-md" />
+            <div className="skeleton-line h-2.5 w-12 rounded-md mt-1" />
+          </div>
+          <div className="skeleton-line size-4 rounded-sm shrink-0" />
         </div>
       </div>
     </div>

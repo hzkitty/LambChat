@@ -39,6 +39,7 @@ export function AttachmentPreviewHost() {
             attachment.type === "image" ? getFullUrl(attachment.url) : undefined
           }
           onClose={closeAttachmentPreview}
+          mobileFillViewport
         />
       )}
     </DelayedUnmount>

@@ -79,6 +79,33 @@ const cacheStableIconsPlugin = {
 
 export default defineConfig({
   plugins: [react(), cacheStableIconsPlugin],
+  resolve: {
+    alias: [
+      {
+        find: /^opentype\.js$/,
+        replacement: path.resolve(
+          __dirname,
+          "node_modules/opentype.js/dist/opentype.js",
+        ),
+      },
+      {
+        find: /^stream$/,
+        replacement: path.resolve(__dirname, "node_modules/stream-browserify"),
+      },
+      {
+        find: /^events$/,
+        replacement: path.resolve(__dirname, "node_modules/events"),
+      },
+      {
+        find: /^util$/,
+        replacement: path.resolve(__dirname, "node_modules/util"),
+      },
+      {
+        find: /^process$/,
+        replacement: path.resolve(__dirname, "node_modules/process/browser"),
+      },
+    ],
+  },
   esbuild: {
     drop: process.env.NODE_ENV === "production" ? ["console", "debugger"] : [],
   },
