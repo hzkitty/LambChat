@@ -2,12 +2,18 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from "react";
 import { authApi } from "../services/api";
-
-type Theme = "light" | "dark";
+import {
+  applyThemeToDocument,
+  getInitialThemePreference,
+  isTheme,
+  THEME_STORAGE_KEY,
+  type Theme,
+} from "../utils/themeDom";
 
 interface ThemeContextType {
   theme: Theme;
@@ -17,55 +23,19 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = "lamb-agent-theme";
-const THEME_COLORS: Record<Theme, string> = {
-  light: "#f5f5f4",
-  dark: "#151210",
-};
-
-function syncBrowserThemeChrome(theme: Theme): void {
-  const color = THEME_COLORS[theme];
-  document
-    .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    ?.setAttribute("content", color);
-  document
-    .querySelector<HTMLMetaElement>(
-      'meta[name="apple-mobile-web-app-status-bar-style"]',
-    )
-    ?.setAttribute("content", theme === "dark" ? "black" : "default");
-}
-
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Read from localStorage
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "light" || stored === "dark") {
-        return stored;
-      }
-      // Fall back to system preference
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-      }
-    }
-    return "light";
-  });
+  const [theme, setThemeState] = useState<Theme>(getInitialThemePreference);
+
+  useLayoutEffect(() => {
+    applyThemeToDocument(theme);
+  }, [theme]);
 
   useEffect(() => {
-    // Apply theme class to root element
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    syncBrowserThemeChrome(theme);
-    // Persist to localStorage
-    localStorage.setItem(STORAGE_KEY, theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
     // Sync to backend (non-blocking)
     authApi.updateMetadata({ theme }).catch(() => {});
   }, [theme]);
@@ -74,7 +44,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
       // Only auto-switch if user hasn't explicitly set a preference
       if (!stored) {
         setThemeState(e.matches ? "dark" : "light");
@@ -89,7 +59,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const handleExternalThemeChange = (e: Event) => {
       const newTheme = (e as CustomEvent<string>).detail;
-      if (newTheme === "light" || newTheme === "dark") {
+      if (isTheme(newTheme)) {
         setThemeState(newTheme);
       }
     };

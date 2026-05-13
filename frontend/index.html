@@ -286,6 +286,7 @@
         const color = theme === "dark" ? darkColor : lightColor;
         const themeColor = document.getElementById("app-theme-color");
         const statusBar = document.getElementById("apple-status-bar-style");
+        document.documentElement.classList.toggle("dark", theme === "dark");
         document.documentElement.style.backgroundColor = color;
         document.body.style.backgroundColor = color;
         themeColor?.setAttribute("content", color);
