@@ -2,17 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import QRCode from "qrcode";
 import { BackIcon } from "../../../common/BackIcon";
-import {
-  MessageSquare,
-  Save,
-  Trash2,
-  RefreshCw,
-  Check,
-  X,
-  Sparkles,
-  QrCode,
-  ExternalLink,
-} from "lucide-react";
+import { MessageSquare, Save, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../../hooks/useAuth";
@@ -20,50 +10,18 @@ import { Permission } from "../../../../types";
 import { PanelHeader } from "../../../common/PanelHeader";
 import { LoadingSpinner } from "../../../common/LoadingSpinner";
 import { ChannelsPanelSkeleton } from "../../../skeletons";
-import { ChannelAgentSelect } from "../ChannelAgentSelect";
-import { ChannelModelSelect } from "../ChannelModelSelect";
 import { EditorSidebar } from "../../../common/EditorSidebar";
 import { channelApi } from "../../../../services/api/channel";
+import {
+  DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+  PREDEFINED_EMOJIS,
+} from "./constants";
+import { FeishuPanelForm } from "./FeishuPanelForm";
 import type {
-  ChannelConfigResponse,
-  ChannelConfigStatus,
-} from "../../../../types/channel";
-
-type FeishuConfigResponse = ChannelConfigResponse["config"] & {
-  app_id: string;
-  encrypt_key: string;
-  verification_token: string;
-  react_emoji: string;
-  group_policy: "open" | "mention";
-  stream_reply?: boolean;
-  auto_transcribe_audio?: boolean;
-};
-
-type FeishuConfigStatus = ChannelConfigStatus;
-
-interface FeishuPanelProps {
-  instanceId: string;
-  initialConfig?: ChannelConfigResponse | null;
-  initialStatus?: ChannelConfigStatus | null;
-  isLoading?: boolean;
-  onClose?: () => void;
-}
-
-// Predefined emoji options
-const PREDEFINED_EMOJIS = [
-  { value: "THUMBSUP", emoji: "👍", labelKey: "feishu.emoji.thumbsUp" },
-  { value: "OK", emoji: "👌", labelKey: "feishu.emoji.ok" },
-  { value: "EYES", emoji: "👀", labelKey: "feishu.emoji.eyes" },
-  { value: "DONE", emoji: "✅", labelKey: "feishu.emoji.done" },
-  { value: "HEART", emoji: "❤️", labelKey: "feishu.emoji.heart" },
-  { value: "FIRE", emoji: "🔥", labelKey: "feishu.emoji.fire" },
-  { value: "ROCKET", emoji: "🚀", labelKey: "feishu.emoji.rocket" },
-  { value: "CLAP", emoji: "👏", labelKey: "feishu.emoji.clap" },
-  { value: "STAR", emoji: "⭐", labelKey: "feishu.emoji.star" },
-  { value: "PARTY", emoji: "🎉", labelKey: "feishu.emoji.party" },
-  { value: "THINKING", emoji: "🤔", labelKey: "feishu.emoji.thinking" },
-  { value: "MUSCLE", emoji: "💪", labelKey: "feishu.emoji.muscle" },
-];
+  FeishuConfigResponse,
+  FeishuConfigStatus,
+  FeishuPanelProps,
+} from "./types";
 
 export function FeishuPanel({
   instanceId,
@@ -99,14 +57,25 @@ export function FeishuPanel({
   const [groupPolicy, setGroupPolicy] = useState<"open" | "mention">("mention");
   const [streamReply, setStreamReply] = useState(true);
   const [autoTranscribeAudio, setAutoTranscribeAudio] = useState(true);
+  const [audioTranscribePrompt, setAudioTranscribePrompt] = useState(
+    DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+  );
   const [agentId, setAgentId] = useState<string | null>(null);
   const [modelId, setModelId] = useState<string | null>(null);
-  const [registrationSessionId, setRegistrationSessionId] = useState<string | null>(null);
+  const [registrationSessionId, setRegistrationSessionId] = useState<
+    string | null
+  >(null);
   const [registrationStatus, setRegistrationStatus] = useState("");
-  const [registrationQrUrl, setRegistrationQrUrl] = useState<string | null>(null);
-  const [registrationQrDataUrl, setRegistrationQrDataUrl] = useState<string | null>(null);
+  const [registrationQrUrl, setRegistrationQrUrl] = useState<string | null>(
+    null,
+  );
+  const [registrationQrDataUrl, setRegistrationQrDataUrl] = useState<
+    string | null
+  >(null);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [credentialMode, setCredentialMode] = useState<"scan" | "manual">("scan");
+  const [credentialMode, setCredentialMode] = useState<"scan" | "manual">(
+    "scan",
+  );
 
   // Track if config exists
   const [hasExistingConfig, setHasExistingConfig] = useState(false);
@@ -143,6 +112,10 @@ export function FeishuPanel({
       setGroupPolicy(feishuConfig?.group_policy || "mention");
       setStreamReply(feishuConfig?.stream_reply ?? true);
       setAutoTranscribeAudio(feishuConfig?.auto_transcribe_audio ?? true);
+      setAudioTranscribePrompt(
+        feishuConfig?.audio_transcribe_prompt ||
+          DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+      );
       setCredentialMode("manual");
       setAgentId(initialConfig.agent_id || null);
       setModelId(initialConfig.model_id || null);
@@ -173,6 +146,7 @@ export function FeishuPanel({
       setGroupPolicy("mention");
       setStreamReply(true);
       setAutoTranscribeAudio(true);
+      setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
       setCredentialMode("scan");
       setAgentId(null);
       setModelId(null);
@@ -202,6 +176,7 @@ export function FeishuPanel({
         setGroupPolicy("mention");
         setStreamReply(true);
         setAutoTranscribeAudio(true);
+        setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
         setCredentialMode("scan");
         setStatus(null);
         setIsLoading(false);
@@ -225,6 +200,10 @@ export function FeishuPanel({
         setGroupPolicy(feishuConfig.group_policy || "mention");
         setStreamReply(feishuConfig.stream_reply ?? true);
         setAutoTranscribeAudio(feishuConfig.auto_transcribe_audio ?? true);
+        setAudioTranscribePrompt(
+          feishuConfig.audio_transcribe_prompt ||
+            DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+        );
         setCredentialMode("manual");
         setAgentId(configResponse.agent_id || null);
         setModelId(configResponse.model_id || null);
@@ -256,6 +235,7 @@ export function FeishuPanel({
         setGroupPolicy("mention");
         setStreamReply(true);
         setAutoTranscribeAudio(true);
+        setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
         setCredentialMode("scan");
         setAgentId(null);
         setModelId(null);
@@ -279,23 +259,31 @@ export function FeishuPanel({
       return;
     }
 
+    let completed = false;
     const interval = window.setInterval(async () => {
       try {
-        const result = await channelApi.getFeishuRegistration(registrationSessionId);
+        const result = await channelApi.getFeishuRegistration(
+          registrationSessionId,
+        );
         setRegistrationStatus(result.status);
         setRegistrationQrUrl(result.qr_url || null);
 
         if (result.status === "success" && result.app_id && result.app_secret) {
+          completed = true;
           setAppId(result.app_id);
           setAppSecret(result.app_secret);
           setIsRegistering(false);
           setRegistrationSessionId(null);
-          toast.success(t("feishu.registrationSuccess", "Feishu app credentials received"));
+          toast.success(
+            t("feishu.registrationSuccess", "Feishu app credentials received"),
+          );
         } else if (["error", "expired", "cancelled"].includes(result.status)) {
+          completed = true;
           setIsRegistering(false);
           setRegistrationSessionId(null);
           toast.error(
-            result.error || t("feishu.registrationFailed", "Feishu registration failed"),
+            result.error ||
+              t("feishu.registrationFailed", "Feishu registration failed"),
           );
         }
       } catch (error) {
@@ -305,7 +293,16 @@ export function FeishuPanel({
       }
     }, 2000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearInterval(interval);
+      if (!completed) {
+        void channelApi
+          .cancelFeishuRegistration(registrationSessionId)
+          .catch((error) => {
+            console.error("Failed to cancel Feishu registration:", error);
+          });
+      }
+    };
   }, [registrationSessionId, t]);
 
   useEffect(() => {
@@ -399,6 +396,7 @@ export function FeishuPanel({
           group_policy: groupPolicy,
           stream_reply: streamReply,
           auto_transcribe_audio: autoTranscribeAudio,
+          audio_transcribe_prompt: audioTranscribePrompt,
           enabled,
         };
 
@@ -435,6 +433,7 @@ export function FeishuPanel({
             group_policy: groupPolicy,
             stream_reply: streamReply,
             auto_transcribe_audio: autoTranscribeAudio,
+            audio_transcribe_prompt: audioTranscribePrompt,
           },
           agent_id: agentId,
           model_id: modelId,
@@ -493,6 +492,7 @@ export function FeishuPanel({
       setGroupPolicy("mention");
       setStreamReply(true);
       setAutoTranscribeAudio(true);
+      setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
       setCredentialMode("scan");
       setStatus(null);
       toast.success(t("feishu.deleteSuccess", "Feishu configuration deleted"));
@@ -530,487 +530,52 @@ export function FeishuPanel({
     return <ChannelsPanelSkeleton />;
   }
 
-  // Form content shared between both modes
   const formContent = (
-    <div className="es-form">
-      {/* Status Callout */}
-      {hasExistingConfig && status && (
-        <div
-          className={`es-callout ${
-            status.connected ? "es-callout--success" : "es-callout--danger"
-          }`}
-        >
-          <div className="es-callout-icon">
-            {status.connected ? <Check size={14} /> : <X size={14} />}
-          </div>
-          <div className="es-callout-body">
-            <div className="es-callout-title">
-              <span
-                className={`es-status-dot ${
-                  status.connected ? "" : "opacity-40"
-                }`}
-              />
-              {status.connected
-                ? t("feishu.connected", "Connected")
-                : t("feishu.disconnected", "Disconnected")}
-            </div>
-            {status.error_message && (
-              <div className="es-callout-desc">{status.error_message}</div>
-            )}
-          </div>
-          <button
-            onClick={handleTest}
-            disabled={isTesting || !enabled}
-            className="btn-secondary btn-sm ml-auto flex-shrink-0"
-          >
-            {isTesting ? (
-              <span className="animate-spin inline-block">⟳</span>
-            ) : (
-              <RefreshCw size={14} />
-            )}
-            {t("feishu.testConnection", "Test")}
-          </button>
-        </div>
-      )}
-
-      {/* Instance Name */}
-      {!hasExistingConfig && (
-        <div className="es-field">
-          <label className="es-label">
-            {t("feishu.instanceName", "Instance Name")}
-            <span className="es-required">*</span>
-          </label>
-          <input
-            type="text"
-            value={instanceName}
-            onChange={(e) => setInstanceName(e.target.value)}
-            placeholder={t("feishu.instanceNamePlaceholder", "My Feishu Bot")}
-            className="glass-input es-input"
-          />
-        </div>
-      )}
-
-      {/* Enable Toggle */}
-      <div className="es-section">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium text-[var(--theme-text)]">
-              {t("feishu.enabled", "Enable Feishu Bot")}
-            </div>
-            <p className="es-hint mt-0.5">
-              {t("feishu.enabledDesc", "Enable or disable this channel")}
-            </p>
-          </div>
-          <button
-            onClick={() => setEnabled(!enabled)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              enabled ? "bg-[var(--theme-primary)]" : "bg-theme-primary-light"
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? "translate-x-4" : "translate-x-0.5"
-              }`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* App Credentials */}
-      <div className="es-section">
-        <div className="es-section-title">
-          {t("feishu.credentials", "App Credentials")}
-        </div>
-
-        <div className="mb-4 grid grid-cols-2 rounded-lg bg-[var(--glass-bg-subtle)] p-1">
-          <button
-            type="button"
-            onClick={() => setCredentialMode("scan")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              credentialMode === "scan"
-                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm"
-                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
-            }`}
-          >
-            {t("feishu.scanCreate", "Scan to Create")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setCredentialMode("manual")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              credentialMode === "manual"
-                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm"
-                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
-            }`}
-          >
-            {t("feishu.manualFill", "Manual")}
-          </button>
-        </div>
-
-        {credentialMode === "scan" && (
-          <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-bg-card)] px-4 py-6 text-center">
-            <p className="mx-auto max-w-[28rem] text-sm text-[var(--theme-text-secondary)]">
-              {t(
-                "feishu.scanCreateDesc",
-                "Use the Feishu app to scan and create a bot. The current App ID and App Secret will be overwritten.",
-              )}
-            </p>
-
-            <button
-              type="button"
-              onClick={handleStartRegistration}
-              disabled={isRegistering || !canWrite}
-              className="btn-primary mx-auto mt-4"
-            >
-              <QrCode size={16} />
-              {isRegistering
-                ? t("feishu.registering", "Waiting for scan")
-                : t("feishu.oneClickRegister", "Create Feishu App")}
-            </button>
-
-            {(registrationQrDataUrl || isRegistering) && (
-              <div className="mt-5 flex flex-col items-center">
-                <div className="flex size-[224px] items-center justify-center rounded-xl border border-[var(--theme-border)] bg-white p-3 shadow-sm">
-                  {registrationQrDataUrl ? (
-                    <img
-                      src={registrationQrDataUrl}
-                      alt={t("feishu.scanWithFeishu", "Scan with Feishu")}
-                      className="size-full"
-                    />
-                  ) : (
-                    <LoadingSpinner size="md" />
-                  )}
-                </div>
-                <div className="mt-3 text-sm font-medium text-amber-600">
-                  {registrationStatus === "qr_ready"
-                    ? t("feishu.waitingForScan", "Waiting for scan")
-                    : registrationStatus || t("feishu.waitingForQr", "Preparing QR")}
-                </div>
-                <div className="mt-2 text-xs text-[var(--theme-text-secondary)]">
-                  {t(
-                    "feishu.qrExpiresHint",
-                    "QR code is valid for 10 minutes and can be scanned once.",
-                  )}
-                </div>
-                {registrationQrUrl && (
-                  <a
-                    href={registrationQrUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--theme-primary)]"
-                  >
-                    <ExternalLink size={12} />
-                    {t("feishu.openRegistration", "Open in browser")}
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {credentialMode === "manual" && (
-          <>
-            <div className="es-field">
-              <label className="es-label">
-                {t("feishu.appId", "App ID")}
-                <span className="es-required">*</span>
-              </label>
-              <input
-                type="text"
-                value={appId}
-                onChange={(e) => setAppId(e.target.value)}
-                placeholder={t("feishu.appIdPlaceholder", "cli_xxxxxxxxxx")}
-                className="glass-input es-input"
-              />
-            </div>
-            <div className="es-field">
-              <label className="es-label">
-                {t("feishu.appSecret", "App Secret")}
-                {hasExistingConfig ? (
-                  <span className="es-hint ml-1">{t("feishu.leaveEmpty")}</span>
-                ) : (
-                  <span className="es-required">*</span>
-                )}
-              </label>
-              <input
-                type="password"
-                value={appSecret}
-                onChange={(e) => setAppSecret(e.target.value)}
-                placeholder={
-                  hasExistingConfig ? t("feishu.passwordMask", "••••••••••••") : ""
-                }
-                className="glass-input es-input"
-              />
-            </div>
-          </>
-        )}
-
-        {credentialMode === "scan" && appId && (
-          <div className="mt-4 rounded-lg border border-[var(--theme-border)] bg-[var(--glass-bg-subtle)] px-3 py-2">
-            <div className="text-xs font-medium text-[var(--theme-text-secondary)]">
-              {t("feishu.currentCredential", "Current credential")}
-            </div>
-            <div className="mt-1 truncate text-sm text-[var(--theme-text)]">{appId}</div>
-          </div>
-        )}
-      </div>
-
-      {/* Security Settings */}
-      <div className="es-section">
-        <div className="es-section-title">
-          {t("feishu.security", "Security Settings")}
-          <span className="ml-1 normal-case tracking-normal opacity-60">
-            ({t("feishu.optional")})
-          </span>
-        </div>
-        <div className="es-field">
-          <label className="es-label">
-            {t("feishu.encryptKey", "Encrypt Key")}
-          </label>
-          <input
-            type="text"
-            value={encryptKey}
-            onChange={(e) => setEncryptKey(e.target.value)}
-            className="glass-input es-input"
-          />
-        </div>
-        <div className="es-field">
-          <label className="es-label">
-            {t("feishu.verificationToken", "Verification Token")}
-          </label>
-          <input
-            type="text"
-            value={verificationToken}
-            onChange={(e) => setVerificationToken(e.target.value)}
-            className="glass-input es-input"
-          />
-        </div>
-      </div>
-
-      {/* Behavior Settings */}
-      <div className="es-section">
-        <div className="es-section-title">
-          {t("feishu.behavior", "Behavior Settings")}
-        </div>
-
-        {/* React Emoji */}
-        <div className="es-field">
-          <div className="flex items-center justify-between">
-            <label className="es-label">
-              {t("feishu.reactEmoji", "Reaction Emoji")}
-            </label>
-            <button
-              type="button"
-              onClick={() => setUseCustomEmoji(!useCustomEmoji)}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                useCustomEmoji
-                  ? "bg-[var(--theme-primary)] text-white"
-                  : "bg-[var(--glass-bg-subtle)] text-theme-text-secondary hover:bg-theme-primary-light"
-              }`}
-            >
-              <Sparkles size={12} />
-              {t("feishu.custom", "Custom")}
-            </button>
-          </div>
-
-          {useCustomEmoji ? (
-            <>
-              <input
-                type="text"
-                value={customEmoji}
-                onChange={(e) => setCustomEmoji(e.target.value)}
-                placeholder={t(
-                  "feishu.customEmojiPlaceholder",
-                  "Enter emoji or text (e.g., 🎯 or DONE)",
-                )}
-                className="glass-input es-input"
-              />
-              <p className="es-hint">
-                {t(
-                  "feishu.customEmojiHint",
-                  "Enter an emoji character or a Feishu emoji type code",
-                )}
-              </p>
-            </>
-          ) : (
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
-              {PREDEFINED_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji.value}
-                  type="button"
-                  onClick={() => setReactEmoji(emoji.value)}
-                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-2 py-1.5 transition-all ${
-                    reactEmoji === emoji.value
-                      ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                      : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
-                  }`}
-                >
-                  <span className="text-base">{emoji.emoji}</span>
-                  <span className="text-[10px] text-[var(--theme-text-secondary)]">
-                    {t(emoji.labelKey)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Streaming */}
-        <div className="es-field">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <label className="es-label">
-                {t("feishu.streamReply", "Streaming Cards")}
-              </label>
-              <p className="es-hint mt-0.5">
-                {t(
-                  "feishu.streamReplyDesc",
-                  "Update the reply card while the agent is generating",
-                )}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setStreamReply(!streamReply)}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-                streamReply
-                  ? "bg-[var(--theme-primary)]"
-                  : "bg-theme-primary-light"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                  streamReply ? "translate-x-4" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Audio */}
-        <div className="es-field">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <label className="es-label">
-                {t("feishu.autoTranscribeAudio", "Audio Transcription")}
-              </label>
-              <p className="es-hint mt-0.5">
-                {t(
-                  "feishu.autoTranscribeAudioDesc",
-                  "Attach voice messages and ask the agent to transcribe them",
-                )}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAutoTranscribeAudio(!autoTranscribeAudio)}
-              className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-                autoTranscribeAudio
-                  ? "bg-[var(--theme-primary)]"
-                  : "bg-theme-primary-light"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                  autoTranscribeAudio ? "translate-x-4" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Group Policy */}
-        <div className="es-field">
-          <label className="es-label">
-            {t("feishu.groupPolicy", "Group Message Policy")}
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setGroupPolicy("mention")}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
-                groupPolicy === "mention"
-                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
-              }`}
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--glass-bg-subtle)] text-sm font-medium text-[var(--theme-text-secondary)]">
-                @
-              </div>
-              <div className="min-w-0">
-                <span className="block text-xs font-medium text-[var(--theme-text)]">
-                  {t("feishu.groupPolicyMention", "Mention Only")}
-                </span>
-                <span className="text-[10px] text-[var(--theme-text-secondary)]">
-                  {t("feishu.groupPolicyMentionDesc", "Reply when @mentioned")}
-                </span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setGroupPolicy("open")}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
-                groupPolicy === "open"
-                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
-              }`}
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--glass-bg-subtle)] text-sm">
-                💬
-              </div>
-              <div className="min-w-0">
-                <span className="block text-xs font-medium text-[var(--theme-text)]">
-                  {t("feishu.groupPolicyOpen", "All Messages")}
-                </span>
-                <span className="text-[10px] text-[var(--theme-text-secondary)]">
-                  {t("feishu.groupPolicyOpenDesc", "Reply to all messages")}
-                </span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Agent & Model */}
-      <div className="es-section">
-        <ChannelAgentSelect value={agentId} onChange={setAgentId} />
-      </div>
-      <div className="es-section">
-        <ChannelModelSelect value={modelId} onChange={setModelId} />
-      </div>
-
-      {/* Setup Guide */}
-      <div className="es-callout">
-        <div className="es-callout-body">
-          <div className="es-callout-title">
-            {t("feishu.setupGuide", "Setup Guide")}
-          </div>
-          <ol className="mt-1 list-decimal list-outside ml-4 space-y-0.5 text-[0.8rem] text-[var(--theme-text-secondary)]">
-            <li>
-              {t("feishu.step1", "Go to Feishu Open Platform (open.feishu.cn)")}
-            </li>
-            <li>
-              {t(
-                "feishu.step2",
-                "Create a custom app and get App ID and App secret",
-              )}
-            </li>
-            <li>
-              {t(
-                "feishu.step3",
-                "Enable bot capability and subscribe to message events",
-              )}
-            </li>
-            <li>
-              {t(
-                "feishu.step4",
-                "Use WebSocket long connection (no public IP required)",
-              )}
-            </li>
-          </ol>
-        </div>
-      </div>
-    </div>
+    <FeishuPanelForm
+      t={t}
+      hasExistingConfig={hasExistingConfig}
+      status={status}
+      enabled={enabled}
+      isTesting={isTesting}
+      canWrite={canWrite}
+      instanceName={instanceName}
+      appId={appId}
+      appSecret={appSecret}
+      encryptKey={encryptKey}
+      verificationToken={verificationToken}
+      reactEmoji={reactEmoji}
+      customEmoji={customEmoji}
+      useCustomEmoji={useCustomEmoji}
+      groupPolicy={groupPolicy}
+      streamReply={streamReply}
+      autoTranscribeAudio={autoTranscribeAudio}
+      audioTranscribePrompt={audioTranscribePrompt}
+      agentId={agentId}
+      modelId={modelId}
+      credentialMode={credentialMode}
+      registrationStatus={registrationStatus}
+      registrationQrUrl={registrationQrUrl}
+      registrationQrDataUrl={registrationQrDataUrl}
+      isRegistering={isRegistering}
+      setInstanceName={setInstanceName}
+      setEnabled={setEnabled}
+      setAppId={setAppId}
+      setAppSecret={setAppSecret}
+      setEncryptKey={setEncryptKey}
+      setVerificationToken={setVerificationToken}
+      setReactEmoji={setReactEmoji}
+      setCustomEmoji={setCustomEmoji}
+      setUseCustomEmoji={setUseCustomEmoji}
+      setGroupPolicy={setGroupPolicy}
+      setStreamReply={setStreamReply}
+      setAutoTranscribeAudio={setAutoTranscribeAudio}
+      setAudioTranscribePrompt={setAudioTranscribePrompt}
+      setAgentId={setAgentId}
+      setModelId={setModelId}
+      setCredentialMode={setCredentialMode}
+      handleStartRegistration={handleStartRegistration}
+      handleTest={handleTest}
+    />
   );
 
   // Action buttons

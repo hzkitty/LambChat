@@ -6,6 +6,7 @@ import pytest
 from fastapi import HTTPException
 
 from src.api.routes import channels as channels_route
+from src.infra.channel.feishu import registration as feishu_registration
 from src.kernel.schemas.channel import ChannelConfigCreate, ChannelConfigUpdate, ChannelType
 
 
@@ -30,9 +31,12 @@ class _FakeStorage:
     def __init__(self) -> None:
         self.create_calls = 0
         self.update_calls = 0
+        self.last_create_kwargs = {}
+        self.last_update_kwargs = {}
 
     async def create_config(self, **kwargs):
         self.create_calls += 1
+        self.last_create_kwargs = kwargs
         return {"instance_id": "instance-1"}
 
     async def get_config(self, user_id: str, channel_type: ChannelType, instance_id: str):
@@ -40,6 +44,7 @@ class _FakeStorage:
 
     async def update_config(self, **kwargs):
         self.update_calls += 1
+        self.last_update_kwargs = kwargs
         return {"instance_id": "instance-1"}
 
     async def get_response(
@@ -125,6 +130,50 @@ async def test_update_channel_rejects_unknown_project_id(
 
 
 @pytest.mark.asyncio
+async def test_create_channel_persists_persona_preset_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    storage = _FakeStorage()
+    monkeypatch.setattr(channels_route, "get_registry", lambda: _FakeRegistry())
+    monkeypatch.setattr(channels_route, "_validate_persona_preset_id", _async_noop)
+    monkeypatch.setattr(channels_route, "publish_channel_config_changed", _async_noop)
+
+    await channels_route.create_channel_instance(
+        ChannelType.FEISHU,
+        ChannelConfigCreate(
+            channel_type=ChannelType.FEISHU,
+            name="Feishu",
+            config={},
+            persona_preset_id="persona-1",
+        ),
+        user=SimpleNamespace(sub="user-1", roles=[], permissions=[]),
+        storage=storage,
+    )
+
+    assert storage.last_create_kwargs["persona_preset_id"] == "persona-1"
+
+
+@pytest.mark.asyncio
+async def test_update_channel_persists_explicit_persona_preset_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    storage = _FakeStorage()
+    monkeypatch.setattr(channels_route, "get_registry", lambda: _FakeRegistry())
+    monkeypatch.setattr(channels_route, "_validate_persona_preset_id", _async_noop)
+    monkeypatch.setattr(channels_route, "publish_channel_config_changed", _async_noop)
+
+    await channels_route.update_channel_instance(
+        ChannelType.FEISHU,
+        "instance-1",
+        ChannelConfigUpdate(config={}, persona_preset_id="persona-2"),
+        user=SimpleNamespace(sub="user-1", roles=[], permissions=[]),
+        storage=storage,
+    )
+
+    assert storage.last_update_kwargs["persona_preset_id"] == "persona-2"
+
+
+@pytest.mark.asyncio
 async def test_status_starts_enabled_channel_when_manager_is_disconnected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -146,6 +195,24 @@ async def test_status_starts_enabled_channel_when_manager_is_disconnected(
 
     assert manager.reload_calls == [("user-1", "instance-1")]
     assert status.connected is True
+
+
+@pytest.mark.asyncio
+async def test_start_feishu_registration_returns_without_polling_sleep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = feishu_registration.FeishuRegistrationSession(id="session-1")
+
+    async def _sleep_should_not_be_called(_delay: float) -> None:
+        raise AssertionError("start_feishu_registration should return immediately")
+
+    monkeypatch.setattr(feishu_registration, "start_registration", lambda: session)
+    monkeypatch.setattr("asyncio.sleep", _sleep_should_not_be_called)
+
+    response = await channels_route.start_feishu_registration()
+
+    assert response["session_id"] == "session-1"
+    assert response["status"] == "pending"
 
 
 async def _async_noop(*args, **kwargs) -> None:

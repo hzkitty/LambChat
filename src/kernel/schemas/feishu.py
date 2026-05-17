@@ -8,6 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.infra.utils.datetime import utc_now
 
+DEFAULT_AUDIO_TRANSCRIBE_PROMPT = (
+    "Please transcribe and understand this voice message. "
+    "Use the audio_transcribe tool for the attached audio when needed."
+)
+
 
 class FeishuGroupPolicy(str, Enum):
     """Group message handling policy."""
@@ -34,6 +39,10 @@ class FeishuConfigBase(BaseModel):
     auto_transcribe_audio: bool = Field(
         True, description="Ask the agent to transcribe incoming audio attachments"
     )
+    audio_transcribe_prompt: str = Field(
+        DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+        description="Prompt sent to the agent when an audio message arrives",
+    )
     enabled: bool = Field(True, description="Whether the channel is enabled")
 
 
@@ -56,6 +65,7 @@ class FeishuConfigUpdate(BaseModel):
     group_policy: Optional[FeishuGroupPolicy] = None
     stream_reply: Optional[bool] = None
     auto_transcribe_audio: Optional[bool] = None
+    audio_transcribe_prompt: Optional[str] = None
     enabled: Optional[bool] = None
 
 
@@ -82,6 +92,7 @@ class FeishuConfigResponse(BaseModel):
     group_policy: FeishuGroupPolicy = FeishuGroupPolicy.MENTION
     stream_reply: bool = True
     auto_transcribe_audio: bool = True
+    audio_transcribe_prompt: str = DEFAULT_AUDIO_TRANSCRIBE_PROMPT
     enabled: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

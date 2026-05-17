@@ -18,6 +18,7 @@ from src.infra.logging import get_logger
 logger = get_logger(__name__)
 
 _SESSION_TTL_SECONDS = 15 * 60
+_COMPLETED_SESSION_TTL_SECONDS = 2 * 60
 _sessions_lock = threading.Lock()
 _sessions: dict[str, "FeishuRegistrationSession"] = {}
 
@@ -60,7 +61,7 @@ def _cleanup_sessions() -> None:
             for sid, session in _sessions.items()
             if now - session.created_at > _SESSION_TTL_SECONDS
             or session.status in {"success", "error", "expired", "cancelled"}
-            and now - session.updated_at > 60
+            and now - session.updated_at > _COMPLETED_SESSION_TTL_SECONDS
         ]
         for sid in expired:
             _sessions.pop(sid, None)

@@ -13,6 +13,7 @@ from src.infra.storage.mongodb import get_mongo_client
 from src.infra.utils.datetime import utc_now_iso
 from src.kernel.config import settings
 from src.kernel.schemas.feishu import (
+    DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
     FeishuConfig,
     FeishuConfigCreate,
     FeishuConfigResponse,
@@ -72,6 +73,7 @@ class FeishuStorage:
             "group_policy": config.group_policy.value,
             "stream_reply": config.stream_reply,
             "auto_transcribe_audio": config.auto_transcribe_audio,
+            "audio_transcribe_prompt": config.audio_transcribe_prompt,
             "enabled": config.enabled,
             "created_at": now,
             "updated_at": now,
@@ -110,6 +112,8 @@ class FeishuStorage:
             update_data["stream_reply"] = updates.stream_reply
         if updates.auto_transcribe_audio is not None:
             update_data["auto_transcribe_audio"] = updates.auto_transcribe_audio
+        if updates.audio_transcribe_prompt is not None:
+            update_data["audio_transcribe_prompt"] = updates.audio_transcribe_prompt
         if updates.enabled is not None:
             update_data["enabled"] = updates.enabled
 
@@ -145,6 +149,7 @@ class FeishuStorage:
             group_policy=config.group_policy,
             stream_reply=config.stream_reply,
             auto_transcribe_audio=config.auto_transcribe_audio,
+            audio_transcribe_prompt=config.audio_transcribe_prompt,
             enabled=config.enabled,
             created_at=config.created_at,
             updated_at=config.updated_at,
@@ -208,6 +213,10 @@ class FeishuStorage:
             group_policy=FeishuGroupPolicy(doc.get("group_policy", "mention")),
             stream_reply=doc.get("stream_reply", True),
             auto_transcribe_audio=doc.get("auto_transcribe_audio", True),
+            audio_transcribe_prompt=doc.get(
+                "audio_transcribe_prompt", DEFAULT_AUDIO_TRANSCRIBE_PROMPT
+            )
+            or DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
             enabled=doc.get("enabled", True),
             created_at=created_at,
             updated_at=updated_at,

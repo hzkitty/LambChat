@@ -97,6 +97,7 @@ class FeishuResponseCollector:
         self.text_parts: list[str] = []
         self.tools_used: list[str] = []
         self.files_to_reveal: list[dict] = []
+        self._sent_file_keys: set[str] = set()
 
         # 处理中 emoji 控制
         self._processing_message_id: str | None = None
@@ -426,6 +427,8 @@ class FeishuResponseCollector:
                 if not file_key:
                     logger.warning(f"[Feishu] No key for file {file_name}")
                     continue
+                if file_key in self._sent_file_keys:
+                    continue
 
                 logger.info(f"[Feishu] Reading file {file_name} from storage, key={file_key}")
 
@@ -442,12 +445,17 @@ class FeishuResponseCollector:
                     file_name=file_name,
                 )
                 if feishu_file_key:
-                    await client.send_file_by_key(
+                    sent = await client.send_file_by_key(
                         chat_id=self.chat_id,
                         file_key=feishu_file_key,
                         file_name=file_name,
+                        reply_to_id=self.reply_to_message_id,
                     )
-                    logger.info(f"[Feishu] Sent file: {file_name}")
+                    if sent:
+                        self._sent_file_keys.add(file_key)
+                        logger.info(f"[Feishu] Sent file: {file_name}")
+                    else:
+                        logger.warning(f"[Feishu] Failed to send file {file_name} to Feishu")
                 else:
                     logger.warning(f"[Feishu] Failed to upload file {file_name} to Feishu")
             except Exception as e:
@@ -538,7 +546,6 @@ def create_feishu_message_handler(
             reply_to_message_id = original_message_id
             if chat_type_from_msg == "p2p":
                 delivery_chat_id = metadata.get("reply_chat_id") or chat_id
-                reply_to_message_id = None
             attachments = metadata.get("attachments")
 
             # 处理 /new 命令 - 严格匹配
@@ -561,6 +568,9 @@ def create_feishu_message_handler(
             agent_to_use = default_agent
             model_id: str | None = None
             project_id: str | None = None
+            persona_preset_id: str | None = None
+            enabled_skills: list[str] | None = None
+            persona_system_prompt: str | None = None
             channel_name: str | None = None
             stream_reply = True
             ch_storage = None
@@ -578,8 +588,29 @@ def create_feishu_message_handler(
                         )
                     model_id = ch_config.get("model_id")
                     project_id = ch_config.get("project_id")
+                    persona_preset_id = ch_config.get("persona_preset_id")
                     channel_name = ch_config.get("name")
                     stream_reply = bool(ch_config.get("stream_reply", True))
+
+            if persona_preset_id:
+                try:
+                    from src.infra.persona_preset.manager import PersonaPresetManager
+
+                    snapshot = await PersonaPresetManager().use_preset(
+                        persona_preset_id,
+                        user_id=user_id,
+                        is_admin=False,
+                    )
+                    persona_system_prompt = snapshot.system_prompt
+                    enabled_skills = snapshot.skill_names or None
+                    logger.info(
+                        f"[Feishu] Using channel persona: {snapshot.name} "
+                        f"({persona_preset_id}) for instance {instance_id}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[Feishu] Ignoring unavailable channel persona {persona_preset_id}: {e}"
+                    )
 
             if project_id:
                 try:
@@ -671,24 +702,18 @@ def create_feishu_message_handler(
                 project_id=project_id,
                 agent_options=feishu_agent_options,
                 session_name=session_title,
+                enabled_skills=enabled_skills,
+                persona_system_prompt=persona_system_prompt,
             )
 
             logger.info(f"[Feishu] Task submitted: session={session_id}, run_id={run_id}")
 
-            # 启动处理中 emoji 指示器
-            if original_message_id:
-                await collector.start_processing_indicator(original_message_id)
-
-            try:
-                await _process_events(
-                    collector=collector,
-                    session_id=session_id,
-                    run_id=run_id,
-                    show_tools=show_tools,
-                )
-            finally:
-                # 停止处理中 emoji 指示器
-                await collector.stop_processing_indicator()
+            await _process_events(
+                collector=collector,
+                session_id=session_id,
+                run_id=run_id,
+                show_tools=show_tools,
+            )
 
             streamed = await collector.finalize_stream_message()
             if not streamed:
@@ -753,6 +778,7 @@ async def _process_events(
                                 and "name" in file_info
                             ):
                                 collector.add_file_to_reveal(file_info)
+                                await collector.upload_and_send_files()
                                 logger.info(
                                     f"[Feishu] Added file to reveal: {file_info.get('name')}"
                                 )
@@ -761,6 +787,7 @@ async def _process_events(
                     elif isinstance(result, dict):
                         if "key" in result and "name" in result:
                             collector.add_file_to_reveal(result)
+                            await collector.upload_and_send_files()
                             logger.info(
                                 f"[Feishu] Added file to reveal (dict): {result.get('name')}"
                             )

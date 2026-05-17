@@ -14,7 +14,11 @@ from src.infra.channel.feishu.channel import FEISHU_AVAILABLE, FeishuChannel
 from src.infra.logging import get_logger
 from src.infra.storage.redis import create_redis_client
 from src.kernel.schemas.channel import ChannelType
-from src.kernel.schemas.feishu import FeishuConfig, FeishuGroupPolicy
+from src.kernel.schemas.feishu import (
+    DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+    FeishuConfig,
+    FeishuGroupPolicy,
+)
 
 logger = get_logger(__name__)
 _FEISHU_LEASE_PREFIX = "feishu:lease"
@@ -74,6 +78,8 @@ class FeishuChannelManager(UserChannelManager):
             group_policy=FeishuGroupPolicy(config_dict.get("group_policy") or "mention"),
             stream_reply=config_dict.get("stream_reply", True),
             auto_transcribe_audio=config_dict.get("auto_transcribe_audio", True),
+            audio_transcribe_prompt=config_dict.get("audio_transcribe_prompt")
+            or DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
             enabled=config_dict.get("enabled", True),
         )
 

@@ -13,6 +13,7 @@ from src.infra.channel.pubsub import publish_channel_config_changed
 from src.infra.channel.registry import get_registry
 from src.infra.logging import get_logger
 from src.infra.role.storage import RoleStorage
+from src.kernel.exceptions import AuthorizationError, NotFoundError
 from src.kernel.schemas.channel import (
     ChannelConfigCreate,
     ChannelConfigResponse,
@@ -75,6 +76,25 @@ async def _validate_project_id(project_id: str | None, user: TokenPayload) -> No
         raise HTTPException(status_code=400, detail=f"Project '{project_id}' does not exist")
 
 
+async def _validate_persona_preset_id(persona_preset_id: str | None, user: TokenPayload) -> None:
+    """Validate that the selected persona preset is visible to the current user."""
+    if not persona_preset_id:
+        return
+
+    from src.infra.persona_preset.manager import PersonaPresetManager
+
+    try:
+        await PersonaPresetManager().get_preset(
+            persona_preset_id,
+            user_id=user.sub,
+            is_admin=Permission.PERSONA_PRESET_ADMIN in (user.permissions or []),
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=400, detail="Persona preset does not exist")
+    except AuthorizationError:
+        raise HTTPException(status_code=403, detail="Persona preset is not allowed")
+
+
 @router.get(
     "/types",
     response_model=ChannelTypeListResponse,
@@ -97,13 +117,6 @@ async def start_feishu_registration():
         from src.infra.channel.feishu.registration import start_registration
 
         session = start_registration()
-        # The QR callback usually arrives quickly, but do not block the request for long.
-        import asyncio
-
-        for _ in range(30):
-            if session.qr_url or session.status in {"error", "expired", "cancelled", "success"}:
-                break
-            await asyncio.sleep(0.1)
         return session.to_dict(include_secret=False)
     except ImportError as e:
         raise HTTPException(
@@ -182,6 +195,7 @@ async def list_user_channels(
                         agent_id=config.get("agent_id"),
                         model_id=config.get("model_id"),
                         project_id=config.get("project_id"),
+                        persona_preset_id=config.get("persona_preset_id"),
                         created_at=config.get("created_at"),
                         updated_at=config.get("updated_at"),
                     )
@@ -239,6 +253,7 @@ async def list_channel_instances(
                 agent_id=config.get("agent_id"),
                 model_id=config.get("model_id"),
                 project_id=config.get("project_id"),
+                persona_preset_id=config.get("persona_preset_id"),
                 created_at=config.get("created_at"),
                 updated_at=config.get("updated_at"),
             )
@@ -322,6 +337,7 @@ async def create_channel_instance(
     # Validate agent_id against user permissions
     await _validate_agent_id(data.agent_id, user)
     await _validate_project_id(data.project_id, user)
+    await _validate_persona_preset_id(data.persona_preset_id, user)
 
     try:
         config = await storage.create_config(
@@ -332,6 +348,7 @@ async def create_channel_instance(
             agent_id=data.agent_id,
             model_id=data.model_id,
             project_id=data.project_id,
+            persona_preset_id=data.persona_preset_id,
         )
 
         # Reload the channel client if manager exists
@@ -412,6 +429,14 @@ async def update_channel_instance(
     else:
         project_id_value = ...  # type: ignore[assignment]
 
+    # Handle persona_preset_id with same ellipsis pattern
+    persona_preset_id_value: str | None = ...  # type: ignore[assignment]
+    if "persona_preset_id" in data.model_fields_set:
+        await _validate_persona_preset_id(data.persona_preset_id, user)
+        persona_preset_id_value = data.persona_preset_id
+    else:
+        persona_preset_id_value = ...  # type: ignore[assignment]
+
     config = await storage.update_config(
         user_id=user.sub,
         channel_type=channel_type,
@@ -421,6 +446,7 @@ async def update_channel_instance(
         agent_id=agent_id_value,
         model_id=model_id_value,
         project_id=project_id_value,
+        persona_preset_id=persona_preset_id_value,
     )
 
     if not config:

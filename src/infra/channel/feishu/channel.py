@@ -25,7 +25,11 @@ from src.infra.channel.feishu.utils import (
 from src.infra.logging import get_logger
 from src.infra.storage.redis import get_redis_client
 from src.kernel.schemas.channel import ChannelCapability, ChannelType
-from src.kernel.schemas.feishu import FeishuConfig, FeishuGroupPolicy
+from src.kernel.schemas.feishu import (
+    DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+    FeishuConfig,
+    FeishuGroupPolicy,
+)
 
 logger = get_logger(__name__)
 
@@ -35,6 +39,7 @@ _PROCESSED_MESSAGE_CACHE_MAX = 1000
 _FEISHU_WS_LOOP_LOCK = threading.Lock()
 _FEISHU_WS_LOOP: asyncio.AbstractEventLoop | None = None
 _FEISHU_WS_THREAD: threading.Thread | None = None
+_LARK_OAPI_WS_PRIVATE_API_VERSION = "1.6.5"
 
 
 def _ensure_feishu_ws_loop() -> asyncio.AbstractEventLoop:
@@ -97,6 +102,7 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
     def __init__(self, config: FeishuConfig, message_handler: Optional[Callable] = None):
         super().__init__(config, message_handler)
         self._client: Any = None
+        self._feishu_http_client: Any = None
         self._ws_client: Any = None
         self._ws_thread: threading.Thread | None = None
         self._ws_future: Any = None
@@ -183,6 +189,12 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                     "description": "Attach audio and ask the agent to transcribe it",
                     "default": True,
                 },
+                "audio_transcribe_prompt": {
+                    "type": "string",
+                    "title": "Audio Transcription Prompt",
+                    "description": "Prompt sent to the agent when an audio message arrives",
+                    "default": DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+                },
             },
         }
 
@@ -265,6 +277,14 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                 "required": False,
                 "sensitive": False,
                 "default": True,
+            },
+            {
+                "name": "audio_transcribe_prompt",
+                "title": "Audio Transcription Prompt",
+                "type": "textarea",
+                "required": False,
+                "sensitive": False,
+                "default": DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
             },
         ]
 
@@ -391,6 +411,9 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
         import lark_oapi.ws.client as _lark_ws_client
 
         ws_loop = asyncio.get_running_loop()
+        # lark-oapi reads this process-global loop; every tenant is scheduled
+        # onto the shared loop from _ensure_feishu_ws_loop(), so this assignment
+        # is idempotent across tenants.
         _lark_ws_client.loop = ws_loop
         self._ws_client = lark.ws.Client(
             self.config.app_id,
@@ -411,17 +434,15 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                         f"Feishu WebSocket connecting for user {self.config.user_id} "
                         f"(attempt {self._reconnect_attempts + 1})"
                     )
-                    await self._ws_client._connect()
+                    await self._sdk_ws_connect()
                     self._set_connection_state(ConnectionState.CONNECTED)
                     self._reset_reconnect_delay()
                     if ping_task is None or ping_task.done():
-                        ping_task = ws_loop.create_task(self._ws_client._ping_loop())
+                        ping_task = self._sdk_ws_start_ping(ws_loop)
                     while self._running:
                         await asyncio.sleep(1)
                 except Exception as e:
-                    logger.warning(
-                        f"Feishu WebSocket error for user {self.config.user_id}: {e}"
-                    )
+                    logger.warning(f"Feishu WebSocket error for user {self.config.user_id}: {e}")
                     if self._running:
                         self._set_connection_state(ConnectionState.RECONNECTING)
                         delay = self._get_reconnect_delay()
@@ -434,10 +455,28 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                 ping_task.cancel()
             if self._ws_client is not None:
                 try:
-                    await self._ws_client._disconnect()
+                    await self._sdk_ws_disconnect()
                 except Exception:
                     pass
             self._set_connection_state(ConnectionState.DISCONNECTED)
+
+    async def _sdk_ws_connect(self) -> None:
+        """Connect through lark-oapi's private WS API.
+
+        lark-oapi 1.6.5 does not expose a public async runner that can host all
+        tenant clients on the SDK's process-global loop. Keep the private-method
+        dependency in these adapter methods so future SDK changes have one place
+        to update.
+        """
+        await self._ws_client._connect()
+
+    def _sdk_ws_start_ping(self, loop: asyncio.AbstractEventLoop) -> asyncio.Task:
+        """Start the lark-oapi 1.6.5 private ping loop."""
+        return loop.create_task(self._ws_client._ping_loop())
+
+    async def _sdk_ws_disconnect(self) -> None:
+        """Disconnect through lark-oapi's private WS API."""
+        await self._ws_client._disconnect()
 
     def _health_check_loop(self) -> None:
         """Health check loop to detect and force-reconnect zombie connections."""
@@ -461,7 +500,7 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                         if self._ws_loop_ref is None or self._ws_client is None:
                             continue
                         asyncio.run_coroutine_threadsafe(
-                            self._ws_client._disconnect(), self._ws_loop_ref
+                            self._sdk_ws_disconnect(), self._ws_loop_ref
                         ).result(timeout=5)
                     except Exception:
                         pass
@@ -475,7 +514,7 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
             try:
                 await asyncio.wrap_future(
                     asyncio.run_coroutine_threadsafe(
-                        self._ws_client._disconnect(),
+                        self._sdk_ws_disconnect(),
                         self._ws_loop_ref,
                     )
                 )
@@ -483,6 +522,7 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                 pass
         if self._ws_future is not None:
             self._ws_future.cancel()
+        await self.close_feishu_http_client()
         self._set_connection_state(ConnectionState.DISCONNECTED)
         logger.info(f"Feishu bot stopped for user {self.config.user_id}")
 
@@ -591,7 +631,13 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
                     file_name = f"{file_name}.mp4"
 
                 if file_key and file_name:
-                    attachment_type = "audio" if msg_type == "audio" else "video" if msg_type == "media" else "document"
+                    attachment_type = (
+                        "audio"
+                        if msg_type == "audio"
+                        else "video"
+                        if msg_type == "media"
+                        else "document"
+                    )
                     content_type = (
                         "audio/ogg"
                         if msg_type == "audio"
@@ -612,7 +658,12 @@ class FeishuChannel(FeishuSenderMixin, BaseChannel):
 
                 if msg_type == "audio" and getattr(self.config, "auto_transcribe_audio", True):
                     content_parts.append(
-                        "请转写并理解这段语音。如果需要，请使用 audio_transcribe 工具处理附件。"
+                        getattr(
+                            self.config,
+                            "audio_transcribe_prompt",
+                            DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
+                        )
+                        or DEFAULT_AUDIO_TRANSCRIBE_PROMPT
                     )
                 else:
                     content_parts.append(MSG_TYPE_MAP.get(msg_type, f"[{msg_type}]"))
