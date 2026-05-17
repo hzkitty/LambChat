@@ -72,6 +72,8 @@ class FeishuChannelManager(UserChannelManager):
             verification_token=config_dict.get("verification_token") or "",
             react_emoji=config_dict.get("react_emoji") or "THUMBSUP",
             group_policy=FeishuGroupPolicy(config_dict.get("group_policy") or "mention"),
+            stream_reply=config_dict.get("stream_reply", True),
+            auto_transcribe_audio=config_dict.get("auto_transcribe_audio", True),
             enabled=config_dict.get("enabled", True),
         )
 
@@ -258,25 +260,43 @@ class FeishuChannelManager(UserChannelManager):
 
         return None
 
-    async def send_message(self, user_id: str, chat_id: str, content: str) -> bool:
+    async def send_message(
+        self,
+        user_id: str,
+        chat_id: str,
+        content: str,
+        instance_id: Optional[str] = None,
+    ) -> bool:
         """Send a message through a user's Feishu bot."""
-        client = self._find_channel(user_id)
+        client = self._find_channel(user_id, instance_id)
         if not client:
-            logger.warning(f"No Feishu client for user {user_id}")
+            logger.warning(f"No Feishu client for user {user_id}, instance {instance_id}")
             return False
 
         return await client.send_message(chat_id, content)
 
-    async def add_reaction(self, user_id: str, message_id: str, emoji_type: str) -> str | None:
+    async def add_reaction(
+        self,
+        user_id: str,
+        message_id: str,
+        emoji_type: str,
+        instance_id: Optional[str] = None,
+    ) -> str | None:
         """Add a reaction emoji to a message via a user's Feishu bot."""
-        client = self._find_channel(user_id)
+        client = self._find_channel(user_id, instance_id)
         if not client:
             return None
         return await client._add_reaction(message_id, emoji_type)
 
-    async def delete_reaction(self, user_id: str, message_id: str, reaction_id: str) -> bool:
+    async def delete_reaction(
+        self,
+        user_id: str,
+        message_id: str,
+        reaction_id: str,
+        instance_id: Optional[str] = None,
+    ) -> bool:
         """Delete a reaction emoji from a message via a user's Feishu bot."""
-        client = self._find_channel(user_id)
+        client = self._find_channel(user_id, instance_id)
         if not client:
             return False
         return await client._delete_reaction(message_id, reaction_id)

@@ -6,10 +6,15 @@ keeping channel.py focused on lifecycle, connection management, and message hand
 
 import asyncio
 import json
+import mimetypes
+import time
 from collections import OrderedDict
 from typing import Any
 
+import httpx
+
 from src.infra.logging import get_logger
+from src.kernel.config import settings
 
 logger = get_logger(__name__)
 
@@ -36,6 +41,203 @@ class FeishuSenderMixin:
         ".ppt": "ppt",
         ".pptx": "ppt",
     }
+    _FEISHU_API_BASE = "https://open.feishu.cn/open-apis"
+    _tenant_access_token: str | None = None
+    _tenant_access_token_expires_at: float = 0.0
+
+    def _resolve_receive_id(self, chat_id: str) -> tuple[str, str]:
+        """Return Feishu receive_id_type and receive_id, stripping local thread suffixes."""
+        receive_id = chat_id.split("#", 1)[0]
+        receive_id_type = "chat_id" if receive_id.startswith("oc_") else "open_id"
+        return receive_id_type, receive_id
+
+    async def _get_tenant_access_token(self) -> str | None:
+        """Fetch and cache tenant_access_token for CardKit REST APIs."""
+        now = time.time()
+        if self._tenant_access_token and now < self._tenant_access_token_expires_at:
+            return self._tenant_access_token
+
+        app_id = getattr(self.config, "app_id", "")
+        app_secret = getattr(self.config, "app_secret", "")
+        if not app_id or not app_secret:
+            return None
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+                response = await client.post(
+                    f"{self._FEISHU_API_BASE}/auth/v3/tenant_access_token/internal/",
+                    json={"app_id": app_id, "app_secret": app_secret},
+                )
+                response.raise_for_status()
+                payload = response.json()
+        except Exception as e:
+            logger.warning("[Feishu] Failed to fetch tenant_access_token: %s", e)
+            return None
+
+        if payload.get("code") != 0:
+            logger.warning(
+                "[Feishu] tenant_access_token failed: code=%s msg=%s",
+                payload.get("code"),
+                payload.get("msg"),
+            )
+            return None
+
+        token = payload.get("tenant_access_token")
+        if not token:
+            return None
+        expire = int(payload.get("expire", 7200))
+        self._tenant_access_token = token
+        self._tenant_access_token_expires_at = now + max(expire - 300, 60)
+        return token
+
+    async def _feishu_json(
+        self,
+        method: str,
+        path: str,
+        *,
+        json_body: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        token = await self._get_tenant_access_token()
+        if not token:
+            return None
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+                response = await client.request(
+                    method,
+                    f"{self._FEISHU_API_BASE}{path}",
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json; charset=utf-8",
+                    },
+                    params=params,
+                    json=json_body,
+                )
+                try:
+                    payload = response.json()
+                except ValueError:
+                    payload = {"code": response.status_code, "msg": response.text}
+                if response.is_error:
+                    logger.warning(
+                        "[Feishu] REST %s %s failed: status=%s payload=%s",
+                        method,
+                        path,
+                        response.status_code,
+                        payload,
+                    )
+                return payload
+        except Exception as e:
+            logger.warning("[Feishu] REST %s %s failed: %s", method, path, e)
+            return None
+
+    def _build_stream_card_json(self, content: str, streaming: bool = True) -> str:
+        preview = content.strip().replace("\n", " ")[:30] or (
+            "正在生成回复..." if streaming else " "
+        )
+        return json.dumps(
+            {
+                "schema": "2.0",
+                "config": {
+                    "streaming_mode": streaming,
+                    "summary": {"content": preview},
+                    "streaming_config": {
+                        "print_frequency_ms": {"default": 40},
+                        "print_step": {"default": 4},
+                        "print_strategy": "fast",
+                    },
+                },
+                "body": {
+                    "elements": [
+                        {
+                            "tag": "markdown",
+                            "content": content or "...",
+                            "element_id": "stream_md",
+                        }
+                    ]
+                },
+            },
+            ensure_ascii=False,
+        )
+
+    async def create_stream_card(self, initial_text: str = "...") -> str | None:
+        payload = await self._feishu_json(
+            "POST",
+            "/cardkit/v1/cards",
+            json_body={"type": "card_json", "data": self._build_stream_card_json(initial_text)},
+        )
+        if not payload or payload.get("code") != 0:
+            logger.warning("[Feishu] Create stream card failed: %s", payload)
+            return None
+        return (payload.get("data") or {}).get("card_id")
+
+    async def send_card_by_id(
+        self,
+        chat_id: str,
+        card_id: str,
+        *,
+        reply_to_id: str | None = None,
+    ) -> tuple[bool, str | None]:
+        content = json.dumps({"type": "card", "data": {"card_id": card_id}}, ensure_ascii=False)
+        if reply_to_id:
+            payload = await self._feishu_json(
+                "POST",
+                f"/im/v1/messages/{reply_to_id}/reply",
+                json_body={"msg_type": "interactive", "content": content},
+            )
+            if payload and payload.get("code") == 0:
+                data = payload.get("data") or {}
+                return True, data.get("message_id")
+            logger.warning("[Feishu] Reply stream card failed, falling back to create: %s", payload)
+
+        receive_id_type, receive_id = self._resolve_receive_id(chat_id)
+        payload = await self._feishu_json(
+            "POST",
+            "/im/v1/messages",
+            params={"receive_id_type": receive_id_type},
+            json_body={
+                "receive_id": receive_id,
+                "msg_type": "interactive",
+                "content": content,
+            },
+        )
+        if not payload or payload.get("code") != 0:
+            logger.warning(
+                "[Feishu] Send stream card failed: receive_id_type=%s receive_id=%s payload=%s",
+                receive_id_type,
+                receive_id,
+                payload,
+            )
+            return False, None
+        data = payload.get("data") or {}
+        return True, data.get("message_id")
+
+    async def update_stream_card(self, card_id: str, content: str, sequence: int) -> bool:
+        payload = await self._feishu_json(
+            "PUT",
+            f"/cardkit/v1/cards/{card_id}/elements/stream_md/content",
+            json_body={"content": content or " ", "sequence": sequence},
+        )
+        if not payload or payload.get("code") != 0:
+            logger.warning("[Feishu] Update stream card failed: %s", payload)
+            return False
+        return True
+
+    async def finalize_stream_card(self, card_id: str, content: str, sequence: int) -> bool:
+        payload = await self._feishu_json(
+            "PUT",
+            f"/cardkit/v1/cards/{card_id}",
+            json_body={
+                "card": {
+                    "type": "card_json",
+                    "data": self._build_stream_card_json(content or " ", streaming=False),
+                },
+                "sequence": sequence,
+            },
+        )
+        if not payload or payload.get("code") != 0:
+            logger.warning("[Feishu] Finalize stream card failed: %s", payload)
+            return False
+        return True
 
     def _add_reaction_sync(self, message_id: str, emoji_type: str) -> str | None:
         """Sync helper for adding reaction."""
@@ -146,12 +348,12 @@ class FeishuSenderMixin:
         if not self._client:
             return False
 
-        receive_id_type = "chat_id" if chat_id.startswith("oc_") else "open_id"
+        receive_id_type, receive_id = self._resolve_receive_id(chat_id)
         text_body = json.dumps({"text": content}, ensure_ascii=False)
 
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._send_message_sync, receive_id_type, chat_id, "text", text_body
+            None, self._send_message_sync, receive_id_type, receive_id, "text", text_body
         )
 
     def _send_message_with_id_sync(
@@ -192,12 +394,12 @@ class FeishuSenderMixin:
         if not self._client:
             return False, None
 
-        receive_id_type = "chat_id" if chat_id.startswith("oc_") else "open_id"
+        receive_id_type, receive_id = self._resolve_receive_id(chat_id)
         text_body = json.dumps({"text": content}, ensure_ascii=False)
 
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._send_message_with_id_sync, receive_id_type, chat_id, "text", text_body
+            None, self._send_message_with_id_sync, receive_id_type, receive_id, "text", text_body
         )
 
     def _send_card_message_sync(
@@ -233,10 +435,16 @@ class FeishuSenderMixin:
                 )
                 response = self._client.im.v1.message.reply(request)
 
-                # If original message was withdrawn (230011), fallback to new message
-                if not response.success() and response.code == 230011:
+                # Reply can fail for p2p apps or withdrawn messages; fall back to a
+                # normal send so the user still gets the final answer when possible.
+                if not response.success():
                     logger.warning(
-                        f"Original message {reply_to_id} was withdrawn, falling back to new message"
+                        "Reply Feishu card failed, falling back to create: "
+                        "code=%s msg=%s receive_id_type=%s receive_id=%s",
+                        response.code,
+                        response.msg,
+                        receive_id_type,
+                        receive_id,
                     )
                     from lark_oapi.api.im.v1 import (
                         CreateMessageRequest,
@@ -276,7 +484,12 @@ class FeishuSenderMixin:
 
             if not response.success():
                 logger.error(
-                    f"Failed to send Feishu card message: code={response.code}, msg={response.msg}"
+                    "Failed to send Feishu card message: code=%s, msg=%s, "
+                    "receive_id_type=%s, receive_id=%s",
+                    response.code,
+                    response.msg,
+                    receive_id_type,
+                    receive_id,
                 )
                 return False, None
             data = response.data
@@ -327,9 +540,9 @@ class FeishuSenderMixin:
         if not self._client:
             return False
 
-        receive_id_type = "chat_id" if chat_id.startswith("oc_") else "open_id"
+        receive_id_type, receive_id = self._resolve_receive_id(chat_id)
         success, _ = await self._send_card_message_internal(
-            receive_id_type, chat_id, card_content, reply_to_id
+            receive_id_type, receive_id, card_content, reply_to_id
         )
         return success
 
@@ -496,52 +709,97 @@ class FeishuSenderMixin:
 
     def _download_image_sync(self, image_key: str, message_id: str) -> bytes | None:
         """Download image from Feishu via GetMessageResourceRequest (sync, runs in executor)."""
+        return self._download_resource_sync(image_key, message_id, "image")
+
+    def _download_resource_sync(
+        self, file_key: str, message_id: str, resource_type: str
+    ) -> bytes | None:
+        """Download a Feishu message resource via GetMessageResourceRequest."""
         from lark_oapi.api.im.v1 import GetMessageResourceRequest
 
         try:
             request = (
                 GetMessageResourceRequest.builder()
                 .message_id(message_id)
-                .file_key(image_key)
-                .type("image")
+                .file_key(file_key)
+                .type(resource_type)
                 .build()
             )
             response = self._client.im.v1.message_resource.get(request)
             if response.success():
                 return response.file.read()
-            logger.warning(f"Failed to download image: code={response.code}, msg={response.msg}")
+            logger.warning(
+                "Failed to download Feishu resource: key=%s type=%s code=%s msg=%s",
+                file_key,
+                resource_type,
+                response.code,
+                response.msg,
+            )
         except Exception as e:
-            logger.error(f"Error downloading Feishu image: {e}")
+            logger.error(f"Error downloading Feishu resource: {e}")
         return None
 
     async def _download_and_store_image(self, image_key: str, message_id: str) -> dict | None:
         """Download image from Feishu, upload to S3, return attachment info dict."""
-        loop = asyncio.get_running_loop()
-        image_bytes = await loop.run_in_executor(
-            None, self._download_image_sync, image_key, message_id
+        return await self._download_and_store_resource(
+            image_key,
+            message_id,
+            resource_type="image",
+            file_name=f"{image_key}.png",
+            attachment_type="image",
+            content_type="image/png",
         )
-        if not image_bytes:
+
+    async def _download_and_store_resource(
+        self,
+        file_key: str,
+        message_id: str,
+        *,
+        resource_type: str,
+        file_name: str,
+        attachment_type: str,
+        content_type: str | None = None,
+    ) -> dict | None:
+        """Download a Feishu resource, upload it to app storage, and return attachment info."""
+        loop = asyncio.get_running_loop()
+        data = await loop.run_in_executor(
+            None, self._download_resource_sync, file_key, message_id, resource_type
+        )
+        if not data:
             return None
+
+        guessed_content_type = content_type or mimetypes.guess_type(file_name)[0]
+        if not guessed_content_type:
+            guessed_content_type = "application/octet-stream"
 
         try:
             from src.infra.storage.s3.service import get_or_init_storage
 
             storage = await get_or_init_storage()
             result = await storage.upload_bytes(
-                data=image_bytes,
-                folder="feishu_images",
-                filename=f"{image_key}.png",
-                content_type="image/png",
+                data=data,
+                folder=f"feishu_{attachment_type}",
+                filename=file_name,
+                content_type=guessed_content_type,
             )
             url = result.url or storage.get_file_url(result.key)
+            if not url:
+                base_url = getattr(settings, "APP_BASE_URL", "").rstrip("/")
+                url = (
+                    f"{base_url}/api/upload/file/{result.key}"
+                    if base_url
+                    else f"/api/upload/file/{result.key}"
+                )
             return {
                 "key": result.key,
-                "name": f"{image_key}.png",
-                "type": "image",
+                "name": file_name,
+                "type": attachment_type,
+                "mime_type": guessed_content_type,
+                "size": len(data),
                 "url": url,
             }
         except Exception as e:
-            logger.error(f"Error uploading Feishu image to S3: {e}")
+            logger.error(f"Error storing Feishu resource: {e}")
             return None
 
     def _upload_image_sync(self, image_data: bytes) -> str | None:
@@ -608,27 +866,26 @@ class FeishuSenderMixin:
             self._chat_mode_cache.popitem(last=False)
         return mode
 
-    def _send_file_message_sync(self, chat_id: str, file_key: str, file_name: str) -> bool:
+    def _send_file_message_sync(
+        self, chat_id: str, file_key: str, file_name: str, msg_type: str = "file"
+    ) -> bool:
         """Send a file message synchronously."""
         from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
         try:
-            receive_id_type = "chat_id" if chat_id.startswith("oc_") else "open_id"
-            content = json.dumps(
-                {
-                    "file_key": file_key,
-                    "file_name": file_name,
-                },
-                ensure_ascii=False,
-            )
+            receive_id_type, receive_id = self._resolve_receive_id(chat_id)
+            payload = {"file_key": file_key}
+            if msg_type == "file":
+                payload["file_name"] = file_name
+            content = json.dumps(payload, ensure_ascii=False)
 
             request = (
                 CreateMessageRequest.builder()
                 .receive_id_type(receive_id_type)
                 .request_body(
                     CreateMessageRequestBody.builder()
-                    .receive_id(chat_id)
-                    .msg_type("file")
+                    .receive_id(receive_id)
+                    .msg_type(msg_type)
                     .content(content)
                     .build()
                 )
@@ -669,7 +926,10 @@ class FeishuSenderMixin:
         if not self._client:
             return False
 
+        ext = file_name.lower().rsplit(".", 1)[-1] if "." in file_name else ""
+        msg_type = "audio" if ext == "opus" else "media" if ext == "mp4" else "file"
+
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None, self._send_file_message_sync, chat_id, file_key, file_name
+            None, self._send_file_message_sync, chat_id, file_key, file_name, msg_type
         )

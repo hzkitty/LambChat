@@ -70,6 +70,8 @@ class FeishuStorage:
             "verification_token": config.verification_token,
             "react_emoji": config.react_emoji,
             "group_policy": config.group_policy.value,
+            "stream_reply": config.stream_reply,
+            "auto_transcribe_audio": config.auto_transcribe_audio,
             "enabled": config.enabled,
             "created_at": now,
             "updated_at": now,
@@ -104,6 +106,10 @@ class FeishuStorage:
             update_data["react_emoji"] = updates.react_emoji
         if updates.group_policy is not None:
             update_data["group_policy"] = updates.group_policy.value
+        if updates.stream_reply is not None:
+            update_data["stream_reply"] = updates.stream_reply
+        if updates.auto_transcribe_audio is not None:
+            update_data["auto_transcribe_audio"] = updates.auto_transcribe_audio
         if updates.enabled is not None:
             update_data["enabled"] = updates.enabled
 
@@ -137,6 +143,8 @@ class FeishuStorage:
             verification_token="***" if config.verification_token else "",
             react_emoji=config.react_emoji,
             group_policy=config.group_policy,
+            stream_reply=config.stream_reply,
+            auto_transcribe_audio=config.auto_transcribe_audio,
             enabled=config.enabled,
             created_at=config.created_at,
             updated_at=config.updated_at,
@@ -198,6 +206,8 @@ class FeishuStorage:
             verification_token=doc.get("verification_token", ""),
             react_emoji=doc.get("react_emoji", "THUMBSUP"),
             group_policy=FeishuGroupPolicy(doc.get("group_policy", "mention")),
+            stream_reply=doc.get("stream_reply", True),
+            auto_transcribe_audio=doc.get("auto_transcribe_audio", True),
             enabled=doc.get("enabled", True),
             created_at=created_at,
             updated_at=updated_at,

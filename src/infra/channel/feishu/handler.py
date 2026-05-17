@@ -28,6 +28,8 @@ EVENT_THINKING = "thinking"
 EVENT_TOOL_START = "tool:start"
 EVENT_TOOL_RESULT = "tool:result"
 EVENT_DONE = "done"
+FEISHU_STREAM_UPDATE_DEBOUNCE_SECONDS = 0.12
+FEISHU_STREAM_FIRST_PAINT_CHARS = 12
 
 
 async def _get_feishu_session_id(chat_id: str) -> str:
@@ -79,6 +81,8 @@ class FeishuResponseCollector:
         reply_to_message_id: str | None = None,
         sender_id: str | None = None,
         chat_type: str | None = None,
+        stream_reply: bool = True,
+        instance_id: str | None = None,
     ):
         self.manager = manager
         self.user_id = user_id
@@ -86,6 +90,8 @@ class FeishuResponseCollector:
         self.reply_to_message_id = reply_to_message_id
         self.sender_id = sender_id
         self.chat_type = chat_type
+        self.stream_reply = stream_reply
+        self.instance_id = instance_id
 
         # 内容收集
         self.text_parts: list[str] = []
@@ -95,10 +101,140 @@ class FeishuResponseCollector:
         # 处理中 emoji 控制
         self._processing_message_id: str | None = None
         self._processing_reaction_id: str | None = None
+        self._stream_card_id: str | None = None
+        self._stream_message_id: str | None = None
+        self._stream_sequence = 0
+        self._stream_failed = False
+        self._stream_finalized = False
+        self._stream_lock = asyncio.Lock()
+        self._stream_update_queue: asyncio.Queue[str | None] = asyncio.Queue()
+        self._stream_update_task: asyncio.Task | None = None
+        self._stream_last_pushed_content = ""
 
     def append_text(self, chunk: str) -> None:
         """追加文本内容"""
         self.text_parts.append(chunk)
+
+    async def append_stream_chunk(self, chunk: str) -> None:
+        """Append one response chunk and push it to a Feishu streaming card when enabled."""
+        self.append_text(chunk)
+        if not self.stream_reply or self._stream_failed or self._stream_finalized:
+            return
+
+        if self._stream_card_id:
+            self._ensure_stream_update_worker()
+            self._stream_update_queue.put_nowait("".join(self.text_parts))
+            return
+
+        initialized = False
+        initial_content = self._first_paint_content("".join(self.text_parts))
+        async with self._stream_lock:
+            if self._stream_failed or self._stream_finalized:
+                return
+            client = self._get_client()
+            if not client:
+                self._stream_failed = True
+                return
+
+            if not self._stream_card_id:
+                card_id = await client.create_stream_card(initial_content)
+                if not card_id:
+                    self._stream_failed = True
+                    return
+                sent, message_id = await client.send_card_by_id(
+                    self.chat_id,
+                    card_id,
+                    reply_to_id=self.reply_to_message_id,
+                )
+                if not sent:
+                    self._stream_failed = True
+                    return
+                self._stream_card_id = card_id
+                self._stream_message_id = message_id
+                self._stream_last_pushed_content = initial_content
+                initialized = True
+
+        self._ensure_stream_update_worker()
+        content = "".join(self.text_parts)
+        if initialized:
+            if initial_content != content:
+                self._stream_update_queue.put_nowait(content)
+        else:
+            self._stream_update_queue.put_nowait(content)
+
+    def _first_paint_content(self, content: str) -> str:
+        """Return a tiny first update so Feishu starts typewriter rendering quickly."""
+        stripped = content.strip()
+        if not stripped:
+            return content
+        if len(stripped) <= FEISHU_STREAM_FIRST_PAINT_CHARS:
+            return content
+        return stripped[:FEISHU_STREAM_FIRST_PAINT_CHARS]
+
+    def _ensure_stream_update_worker(self) -> None:
+        if self._stream_update_task and not self._stream_update_task.done():
+            return
+        self._stream_update_task = asyncio.create_task(self._stream_update_worker())
+        self._stream_update_task.add_done_callback(self._on_stream_update_task_done)
+
+    def _on_stream_update_task_done(self, task: asyncio.Task) -> None:
+        if task.cancelled():
+            return
+        try:
+            task.result()
+        except Exception as e:
+            self._stream_failed = True
+            logger.warning("[Feishu] Stream update worker failed: %s", e, exc_info=True)
+
+    async def _stream_update_worker(self) -> None:
+        first_update = True
+        while True:
+            content = await self._stream_update_queue.get()
+            if content is None:
+                return
+
+            if not first_update:
+                await asyncio.sleep(FEISHU_STREAM_UPDATE_DEBOUNCE_SECONDS)
+                while True:
+                    try:
+                        next_content = self._stream_update_queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+                    if next_content is None:
+                        return
+                    content = next_content
+            first_update = False
+
+            if content == self._stream_last_pushed_content:
+                continue
+
+            async with self._stream_lock:
+                if self._stream_failed or self._stream_finalized or not self._stream_card_id:
+                    return
+                client = self._get_client()
+                if not client:
+                    self._stream_failed = True
+                    return
+                self._stream_sequence += 1
+                success = await client.update_stream_card(
+                    self._stream_card_id,
+                    content,
+                    self._stream_sequence,
+                )
+                if not success:
+                    self._stream_failed = True
+                    return
+                self._stream_last_pushed_content = content
+
+    async def _cancel_stream_update_worker(self) -> None:
+        task = self._stream_update_task
+        if not task or task.done():
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     def add_tool(self, tool_name: str) -> None:
         """添加使用的工具"""
@@ -117,6 +253,7 @@ class FeishuResponseCollector:
             self.user_id,
             message_id,
             FeishuChannel.PROCESSING_EMOJI,
+            self.instance_id,
         )
         if reaction_id:
             self._processing_message_id = message_id
@@ -131,7 +268,12 @@ class FeishuResponseCollector:
         self._processing_message_id = None
         self._processing_reaction_id = None
         try:
-            await self.manager.delete_reaction(self.user_id, message_id, reaction_id)
+            await self.manager.delete_reaction(
+                self.user_id,
+                message_id,
+                reaction_id,
+                self.instance_id,
+            )
         except Exception as e:
             logger.debug(f"[Feishu] Processing emoji error: {e}")
 
@@ -139,7 +281,7 @@ class FeishuResponseCollector:
         """从 send:// URI 读取图片并上传到飞书，返回 image_key。"""
         from src.infra.storage.s3.service import get_or_init_storage
 
-        base_client = self.manager._find_channel(self.user_id)
+        base_client = self.manager._find_channel(self.user_id, self.instance_id)
         if not base_client:
             return None
         client = cast(FeishuChannel, base_client)
@@ -157,14 +299,44 @@ class FeishuResponseCollector:
             logger.debug(f"[Feishu] Failed to upload image from URI {uri}: {e}")
             return None
 
-    async def send_card_message(self) -> bool:
-        """发送卡片消息（支持回复引用、图片嵌入）"""
-        base_client = self.manager._find_channel(self.user_id)
+    def _get_client(self) -> "FeishuChannel | None":
+        base_client = self.manager._find_channel(self.user_id, self.instance_id)
         if not base_client:
             logger.warning(f"[Feishu] No client for user {self.user_id}")
+            return None
+        return cast(FeishuChannel, base_client)
+
+    async def finalize_stream_message(self) -> bool:
+        """Close the streaming card. Returns True when the reply was streamed."""
+        if not self._stream_card_id or self._stream_failed or self._stream_finalized:
             return False
 
-        client = cast(FeishuChannel, base_client)
+        await self._cancel_stream_update_worker()
+        async with self._stream_lock:
+            if not self._stream_card_id or self._stream_failed or self._stream_finalized:
+                return False
+            client = self._get_client()
+            if not client:
+                return False
+            final_text = "".join(self.text_parts).strip() or " "
+            self._stream_sequence += 1
+            success = await client.finalize_stream_card(
+                self._stream_card_id,
+                final_text,
+                self._stream_sequence,
+            )
+            self._stream_finalized = success
+            return success
+
+    async def send_card_message(self) -> bool:
+        """发送卡片消息（支持回复引用、图片嵌入）"""
+        if self._stream_finalized:
+            return True
+
+        client = self._get_client()
+        if not client:
+            return False
+
         content = await self._build_card_content_async(client)
         success = await client.send_card_message(
             self.chat_id, content, reply_to_id=self.reply_to_message_id
@@ -233,7 +405,7 @@ class FeishuResponseCollector:
         if not self.files_to_reveal:
             return
 
-        base_client = self.manager._find_channel(self.user_id)
+        base_client = self.manager._find_channel(self.user_id, self.instance_id)
         if not base_client:
             logger.warning(f"[Feishu] No client for user {self.user_id}")
             return
@@ -358,10 +530,26 @@ def create_feishu_message_handler(
                 f"[Feishu] Processing message from {sender_id} for user {user_id}: {content[:50]}..."
             )
 
+            original_message_id = metadata.get("message_id")
+            sender_id_from_msg = metadata.get("sender_id")
+            chat_type_from_msg = metadata.get("chat_type")
+            instance_id = metadata.get("instance_id")
+            delivery_chat_id = chat_id
+            reply_to_message_id = original_message_id
+            if chat_type_from_msg == "p2p":
+                delivery_chat_id = metadata.get("reply_chat_id") or chat_id
+                reply_to_message_id = None
+            attachments = metadata.get("attachments")
+
             # 处理 /new 命令 - 严格匹配
             if content.strip() == "/new":
                 new_session_id = await _create_new_feishu_session(chat_id)
-                await manager.send_message(user_id, chat_id, "✅ 已创建新对话，请发送消息开始")
+                await manager.send_message(
+                    user_id,
+                    delivery_chat_id,
+                    "✅ 已创建新对话，请发送消息开始",
+                    instance_id,
+                )
                 logger.info(f"[Feishu] New session created for chat {chat_id}: {new_session_id}")
                 return
 
@@ -369,18 +557,13 @@ def create_feishu_message_handler(
             session_id = await _get_feishu_session_id(chat_id)
             task_manager = get_task_manager()
 
-            original_message_id = metadata.get("message_id")
-            sender_id_from_msg = metadata.get("sender_id")
-            chat_type_from_msg = metadata.get("chat_type")
-            attachments = metadata.get("attachments")
-
             # Resolve agent, model & project: use per-channel config if available
             agent_to_use = default_agent
             model_id: str | None = None
             project_id: str | None = None
             channel_name: str | None = None
+            stream_reply = True
             ch_storage = None
-            instance_id = metadata.get("instance_id")
             if instance_id:
                 from src.infra.channel.channel_storage import ChannelStorage
                 from src.kernel.schemas.channel import ChannelType
@@ -396,6 +579,7 @@ def create_feishu_message_handler(
                     model_id = ch_config.get("model_id")
                     project_id = ch_config.get("project_id")
                     channel_name = ch_config.get("name")
+                    stream_reply = bool(ch_config.get("stream_reply", True))
 
             if project_id:
                 try:
@@ -436,10 +620,12 @@ def create_feishu_message_handler(
             collector = FeishuResponseCollector(
                 manager=manager,
                 user_id=user_id,
-                chat_id=chat_id,
-                reply_to_message_id=original_message_id,
+                chat_id=delivery_chat_id,
+                reply_to_message_id=reply_to_message_id,
                 sender_id=sender_id_from_msg,
                 chat_type=chat_type_from_msg,
+                stream_reply=stream_reply,
+                instance_id=instance_id,
             )
 
             async def executor(
@@ -504,7 +690,9 @@ def create_feishu_message_handler(
                 # 停止处理中 emoji 指示器
                 await collector.stop_processing_indicator()
 
-            await collector.send_card_message()
+            streamed = await collector.finalize_stream_message()
+            if not streamed:
+                await collector.send_card_message()
             await collector.upload_and_send_files()
 
             logger.info(f"[Feishu] Message processing completed for {chat_id}")
@@ -513,7 +701,10 @@ def create_feishu_message_handler(
             logger.error(f"[Feishu] Error handling message: {e}", exc_info=True)
             try:
                 await manager.send_message(
-                    user_id, chat_id, f"❌ 处理消息时发生错误: {str(e)[:200]}"
+                    user_id,
+                    delivery_chat_id,
+                    f"❌ 处理消息时发生错误: {str(e)[:200]}",
+                    instance_id,
                 )
             except Exception:
                 pass
@@ -540,7 +731,7 @@ async def _process_events(
             if event_type == EVENT_MESSAGE_CHUNK:
                 chunk = data.get("content", "")
                 if chunk:
-                    collector.append_text(chunk)
+                    await collector.append_stream_chunk(chunk)
 
             elif event_type == EVENT_TOOL_START and show_tools:
                 tool_name = data.get("tool", "")

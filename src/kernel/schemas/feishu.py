@@ -30,6 +30,10 @@ class FeishuConfigBase(BaseModel):
     group_policy: FeishuGroupPolicy = Field(
         FeishuGroupPolicy.MENTION, description="Group message policy"
     )
+    stream_reply: bool = Field(True, description="Stream replies through Feishu CardKit")
+    auto_transcribe_audio: bool = Field(
+        True, description="Ask the agent to transcribe incoming audio attachments"
+    )
     enabled: bool = Field(True, description="Whether the channel is enabled")
 
 
@@ -50,6 +54,8 @@ class FeishuConfigUpdate(BaseModel):
     verification_token: Optional[str] = None
     react_emoji: Optional[str] = None
     group_policy: Optional[FeishuGroupPolicy] = None
+    stream_reply: Optional[bool] = None
+    auto_transcribe_audio: Optional[bool] = None
     enabled: Optional[bool] = None
 
 
@@ -74,6 +80,8 @@ class FeishuConfigResponse(BaseModel):
     verification_token: str = ""  # Masked
     react_emoji: str = "THUMBSUP"
     group_policy: FeishuGroupPolicy = FeishuGroupPolicy.MENTION
+    stream_reply: bool = True
+    auto_transcribe_audio: bool = True
     enabled: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

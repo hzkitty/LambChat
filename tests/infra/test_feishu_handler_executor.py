@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -11,7 +12,9 @@ class _FakeManager:
     def __init__(self) -> None:
         self.sent_messages: list[tuple[str, str, str]] = []
 
-    async def send_message(self, user_id: str, chat_id: str, content: str) -> None:
+    async def send_message(
+        self, user_id: str, chat_id: str, content: str, instance_id: str | None = None
+    ) -> None:
         self.sent_messages.append((user_id, chat_id, content))
 
 
@@ -20,13 +23,61 @@ class _FakeReactionManager:
         self.add_calls: list[tuple[str, str, str]] = []
         self.delete_calls: list[tuple[str, str, str]] = []
 
-    async def add_reaction(self, user_id: str, message_id: str, emoji_type: str) -> str:
+    async def add_reaction(
+        self,
+        user_id: str,
+        message_id: str,
+        emoji_type: str,
+        instance_id: str | None = None,
+    ) -> str:
         self.add_calls.append((user_id, message_id, emoji_type))
         return "reaction-1"
 
-    async def delete_reaction(self, user_id: str, message_id: str, reaction_id: str) -> bool:
+    async def delete_reaction(
+        self,
+        user_id: str,
+        message_id: str,
+        reaction_id: str,
+        instance_id: str | None = None,
+    ) -> bool:
         self.delete_calls.append((user_id, message_id, reaction_id))
         return True
+
+
+class _FakeStreamingClient:
+    def __init__(self) -> None:
+        self.created = 0
+        self.initial_texts: list[str] = []
+        self.sent: list[tuple[str, str, str | None]] = []
+        self.updates: list[tuple[str, str, int]] = []
+        self.finalized: list[tuple[str, str, int]] = []
+
+    async def create_stream_card(self, initial_text: str = "...") -> str:
+        self.created += 1
+        self.initial_texts.append(initial_text)
+        return "card-1"
+
+    async def send_card_by_id(
+        self, chat_id: str, card_id: str, *, reply_to_id: str | None = None
+    ) -> tuple[bool, str]:
+        self.sent.append((chat_id, card_id, reply_to_id))
+        return True, "message-1"
+
+    async def update_stream_card(self, card_id: str, content: str, sequence: int) -> bool:
+        self.updates.append((card_id, content, sequence))
+        return True
+
+    async def finalize_stream_card(self, card_id: str, content: str, sequence: int) -> bool:
+        self.finalized.append((card_id, content, sequence))
+        return True
+
+
+class _FakeStreamingManager:
+    def __init__(self, client: _FakeStreamingClient) -> None:
+        self.client = client
+
+    def _find_channel(self, user_id: str, instance_id: str | None = None):
+        return self.client if user_id == "user-1" else None
 
 
 class _FakeTaskManager:
@@ -209,6 +260,71 @@ async def test_feishu_handler_ignores_stale_channel_project_id(
     assert fake_task_manager.submit_calls[0]["project_id"] == "project-from-channel-name"
 
 
+@pytest.mark.asyncio
+async def test_feishu_handler_uses_event_chat_id_for_p2p_delivery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_task_manager = _FakeTaskManager()
+    fake_manager = _FakeManager()
+    captured_collector: dict[str, Any] = {}
+
+    async def _fake_execute_feishu_agent(**kwargs: Any):
+        yield {"event": "done", "data": {}}
+
+    async def _no_op_process_events(**kwargs: Any) -> None:
+        return None
+
+    class _CaptureCollector:
+        def __init__(self, **kwargs: Any) -> None:
+            captured_collector.update(kwargs)
+
+        async def start_processing_indicator(self, message_id: str) -> None:
+            return None
+
+        async def stop_processing_indicator(self) -> None:
+            return None
+
+        async def finalize_stream_message(self) -> bool:
+            return False
+
+        async def send_card_message(self) -> bool:
+            return True
+
+        async def upload_and_send_files(self) -> None:
+            return None
+
+    monkeypatch.setattr(
+        feishu_handler,
+        "_get_feishu_session_id",
+        lambda chat_id: _async_return(f"feishu_{chat_id}"),
+    )
+    monkeypatch.setattr(
+        "src.infra.task.manager.get_task_manager",
+        lambda: fake_task_manager,
+    )
+    monkeypatch.setattr(feishu_handler, "execute_feishu_agent", _fake_execute_feishu_agent)
+    monkeypatch.setattr(feishu_handler, "_process_events", _no_op_process_events)
+    monkeypatch.setattr(feishu_handler, "FeishuResponseCollector", _CaptureCollector)
+
+    handler = feishu_handler.create_feishu_message_handler(fake_manager, default_agent="search")
+
+    await handler(
+        user_id="user-1",
+        sender_id="ou_sender",
+        chat_id="ou_sender",
+        content="hello",
+        metadata={
+            "message_id": "om_original",
+            "chat_type": "p2p",
+            "reply_chat_id": "oc_p2p_chat",
+        },
+    )
+
+    assert fake_task_manager.submit_calls[0]["session_id"] == "feishu_ou_sender"
+    assert captured_collector["chat_id"] == "oc_p2p_chat"
+    assert captured_collector["reply_to_message_id"] is None
+
+
 async def _async_return(value: Any) -> Any:
     return value
 
@@ -229,3 +345,70 @@ async def test_feishu_processing_indicator_adds_once_and_removes_on_stop() -> No
 
     assert manager.add_calls == [("user-1", "message-1", "StatusInFlight")]
     assert manager.delete_calls == [("user-1", "message-1", "reaction-1")]
+
+
+@pytest.mark.asyncio
+async def test_feishu_collector_streams_chunks_and_finalizes_card() -> None:
+    client = _FakeStreamingClient()
+    collector = feishu_handler.FeishuResponseCollector(
+        manager=_FakeStreamingManager(client),
+        user_id="user-1",
+        chat_id="oc_chat",
+        reply_to_message_id="original-message",
+        stream_reply=True,
+    )
+
+    await collector.append_stream_chunk("hello")
+    await asyncio.sleep(0)
+    await collector.append_stream_chunk(" world")
+    await asyncio.sleep(feishu_handler.FEISHU_STREAM_UPDATE_DEBOUNCE_SECONDS + 0.05)
+
+    assert client.created == 1
+    assert client.initial_texts == ["hello"]
+    assert client.sent == [("oc_chat", "card-1", "original-message")]
+    assert client.updates == [("card-1", "hello world", 1)]
+
+    assert await collector.finalize_stream_message() is True
+    assert client.finalized == [("card-1", "hello world", 2)]
+
+
+@pytest.mark.asyncio
+async def test_feishu_collector_splits_large_first_stream_update() -> None:
+    client = _FakeStreamingClient()
+    collector = feishu_handler.FeishuResponseCollector(
+        manager=_FakeStreamingManager(client),
+        user_id="user-1",
+        chat_id="oc_chat",
+        stream_reply=True,
+    )
+
+    first_chunk = "这是一段比较长的开头内容，应该先推很短的一小段"
+    await collector.append_stream_chunk(first_chunk)
+    await asyncio.sleep(feishu_handler.FEISHU_STREAM_UPDATE_DEBOUNCE_SECONDS + 0.05)
+
+    assert client.initial_texts == [
+        first_chunk[: feishu_handler.FEISHU_STREAM_FIRST_PAINT_CHARS]
+    ]
+    assert client.updates == [("card-1", first_chunk, 1)]
+
+
+@pytest.mark.asyncio
+async def test_feishu_collector_falls_back_when_stream_card_creation_fails() -> None:
+    class _FailingClient(_FakeStreamingClient):
+        async def create_stream_card(self, initial_text: str = "...") -> None:
+            self.created += 1
+            return None
+
+    client = _FailingClient()
+    collector = feishu_handler.FeishuResponseCollector(
+        manager=_FakeStreamingManager(client),
+        user_id="user-1",
+        chat_id="oc_chat",
+        stream_reply=True,
+    )
+
+    await collector.append_stream_chunk("hello")
+
+    assert collector.text_parts == ["hello"]
+    assert await collector.finalize_stream_message() is False
+    assert client.sent == []
