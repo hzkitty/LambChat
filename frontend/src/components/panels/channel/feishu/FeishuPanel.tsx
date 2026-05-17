@@ -62,6 +62,7 @@ export function FeishuPanel({
   );
   const [agentId, setAgentId] = useState<string | null>(null);
   const [modelId, setModelId] = useState<string | null>(null);
+  const [personaPresetId, setPersonaPresetId] = useState<string | null>(null);
   const [registrationSessionId, setRegistrationSessionId] = useState<
     string | null
   >(null);
@@ -119,6 +120,7 @@ export function FeishuPanel({
       setCredentialMode("manual");
       setAgentId(initialConfig.agent_id || null);
       setModelId(initialConfig.model_id || null);
+      setPersonaPresetId(initialConfig.persona_preset_id || null);
 
       const emojiValue = (feishuConfig?.react_emoji as string) || "THUMBSUP";
       const isPredefined = PREDEFINED_EMOJIS.some(
@@ -150,6 +152,7 @@ export function FeishuPanel({
       setCredentialMode("scan");
       setAgentId(null);
       setModelId(null);
+      setPersonaPresetId(null);
     }
 
     if (initialStatus) {
@@ -179,6 +182,7 @@ export function FeishuPanel({
         setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
         setCredentialMode("scan");
         setStatus(null);
+        setPersonaPresetId(null);
         setIsLoading(false);
         return;
       }
@@ -207,6 +211,7 @@ export function FeishuPanel({
         setCredentialMode("manual");
         setAgentId(configResponse.agent_id || null);
         setModelId(configResponse.model_id || null);
+        setPersonaPresetId(configResponse.persona_preset_id || null);
 
         // Check if the emoji is a predefined one or custom
         const emojiValue = feishuConfig?.react_emoji || "THUMBSUP";
@@ -239,6 +244,7 @@ export function FeishuPanel({
         setCredentialMode("scan");
         setAgentId(null);
         setModelId(null);
+        setPersonaPresetId(null);
       }
 
       setStatus(statusResponse);
@@ -415,6 +421,7 @@ export function FeishuPanel({
           enabled,
           agent_id: agentId,
           model_id: modelId,
+          persona_preset_id: personaPresetId,
         });
         const feishuConfig = updated.config as FeishuConfigResponse;
         setConfig(feishuConfig);
@@ -437,6 +444,7 @@ export function FeishuPanel({
           },
           agent_id: agentId,
           model_id: modelId,
+          persona_preset_id: personaPresetId,
         });
         const feishuConfig = created.config as FeishuConfigResponse;
         setConfig(feishuConfig);
@@ -494,6 +502,7 @@ export function FeishuPanel({
       setAutoTranscribeAudio(true);
       setAudioTranscribePrompt(DEFAULT_AUDIO_TRANSCRIBE_PROMPT);
       setCredentialMode("scan");
+      setPersonaPresetId(null);
       setStatus(null);
       toast.success(t("feishu.deleteSuccess", "Feishu configuration deleted"));
       onClose?.();
@@ -552,6 +561,7 @@ export function FeishuPanel({
       audioTranscribePrompt={audioTranscribePrompt}
       agentId={agentId}
       modelId={modelId}
+      personaPresetId={personaPresetId}
       credentialMode={credentialMode}
       registrationStatus={registrationStatus}
       registrationQrUrl={registrationQrUrl}
@@ -572,6 +582,7 @@ export function FeishuPanel({
       setAudioTranscribePrompt={setAudioTranscribePrompt}
       setAgentId={setAgentId}
       setModelId={setModelId}
+      setPersonaPresetId={setPersonaPresetId}
       setCredentialMode={setCredentialMode}
       handleStartRegistration={handleStartRegistration}
       handleTest={handleTest}

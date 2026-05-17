@@ -571,6 +571,7 @@ def create_feishu_message_handler(
             persona_preset_id: str | None = None
             enabled_skills: list[str] | None = None
             persona_system_prompt: str | None = None
+            persona_metadata: dict[str, Any] | None = None
             channel_name: str | None = None
             stream_reply = True
             ch_storage = None
@@ -603,6 +604,14 @@ def create_feishu_message_handler(
                     )
                     persona_system_prompt = snapshot.system_prompt
                     enabled_skills = snapshot.skill_names or None
+                    persona_metadata = {
+                        "persona_preset_id": snapshot.preset_id,
+                        "persona_preset_name": snapshot.name,
+                        "persona_snapshot": snapshot.model_dump(),
+                        "enabled_skills": enabled_skills,
+                    }
+                    if snapshot.avatar:
+                        persona_metadata["persona_avatar"] = snapshot.avatar
                     logger.info(
                         f"[Feishu] Using channel persona: {snapshot.name} "
                         f"({persona_preset_id}) for instance {instance_id}"
@@ -705,6 +714,17 @@ def create_feishu_message_handler(
                 enabled_skills=enabled_skills,
                 persona_system_prompt=persona_system_prompt,
             )
+            if persona_metadata:
+                try:
+                    from src.infra.session.manager import SessionManager
+                    from src.kernel.schemas.session import SessionUpdate
+
+                    await SessionManager().update_session(
+                        session_id,
+                        SessionUpdate(metadata=persona_metadata),
+                    )
+                except Exception as e:
+                    logger.warning(f"[Feishu] Failed to persist persona metadata: {e}")
 
             logger.info(f"[Feishu] Task submitted: session={session_id}, run_id={run_id}")
 

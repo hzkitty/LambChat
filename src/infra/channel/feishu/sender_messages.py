@@ -13,6 +13,7 @@ class FeishuMessageSenderMixin:
     """Mixin providing message send/update and reaction operations."""
 
     _client: Any
+    _resolve_receive_id: Any
     _REPLY_FALLBACK_ERROR_CODES: set[int]
 
     def _add_reaction_sync(self, message_id: str, emoji_type: str) -> str | None:

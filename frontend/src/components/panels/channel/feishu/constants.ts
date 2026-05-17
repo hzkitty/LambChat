@@ -1,17 +1,22 @@
-// Predefined emoji options
+// Predefined emoji options — status/acknowledgment emojis for bot reactions
+// Source: https://open.larksuite.com/document/server-docs/im-v1/message-reaction/emojis-introduce
 export const PREDEFINED_EMOJIS = [
   { value: "THUMBSUP", emoji: "👍", labelKey: "feishu.emoji.thumbsUp" },
   { value: "OK", emoji: "👌", labelKey: "feishu.emoji.ok" },
-  { value: "EYES", emoji: "👀", labelKey: "feishu.emoji.eyes" },
   { value: "DONE", emoji: "✅", labelKey: "feishu.emoji.done" },
-  { value: "HEART", emoji: "❤️", labelKey: "feishu.emoji.heart" },
-  { value: "FIRE", emoji: "🔥", labelKey: "feishu.emoji.fire" },
-  { value: "ROCKET", emoji: "🚀", labelKey: "feishu.emoji.rocket" },
+  { value: "Yes", emoji: "☑️", labelKey: "feishu.emoji.yes" },
+  { value: "CheckMark", emoji: "✔️", labelKey: "feishu.emoji.checkMark" },
+  { value: "Get", emoji: "📥", labelKey: "feishu.emoji.get" },
+  { value: "OnIt", emoji: "🎯", labelKey: "feishu.emoji.onIt" },
+  { value: "OneSecond", emoji: "⏳", labelKey: "feishu.emoji.oneSecond" },
+  { value: "LGTM", emoji: "👀", labelKey: "feishu.emoji.lgtm" },
+  { value: "MeMeMe", emoji: "🙋", labelKey: "feishu.emoji.meMeMe" },
+  { value: "THANKS", emoji: "🙏", labelKey: "feishu.emoji.thanks" },
+  { value: "SALUTE", emoji: "🫡", labelKey: "feishu.emoji.salute" },
   { value: "CLAP", emoji: "👏", labelKey: "feishu.emoji.clap" },
-  { value: "STAR", emoji: "⭐", labelKey: "feishu.emoji.star" },
-  { value: "PARTY", emoji: "🎉", labelKey: "feishu.emoji.party" },
-  { value: "THINKING", emoji: "🤔", labelKey: "feishu.emoji.thinking" },
+  { value: "Fire", emoji: "🔥", labelKey: "feishu.emoji.fire" },
   { value: "MUSCLE", emoji: "💪", labelKey: "feishu.emoji.muscle" },
+  { value: "PRAISE", emoji: "🏅", labelKey: "feishu.emoji.praise" },
 ];
 
 export const DEFAULT_AUDIO_TRANSCRIBE_PROMPT =

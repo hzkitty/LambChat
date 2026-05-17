@@ -75,6 +75,36 @@ class _FakeProjectStorage:
         return None
 
 
+class _FakePersonaManager:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, bool]] = []
+
+    async def get_preset(self, preset_id: str, *, user_id: str, is_admin: bool):
+        self.calls.append((preset_id, user_id, is_admin))
+        return SimpleNamespace(id=preset_id)
+
+
+@pytest.mark.asyncio
+async def test_validate_persona_preset_id_detects_admin_permission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = _FakePersonaManager()
+    monkeypatch.setattr(
+        "src.infra.persona_preset.manager.PersonaPresetManager",
+        lambda: manager,
+    )
+
+    await channels_route._validate_persona_preset_id(
+        "persona-1",
+        SimpleNamespace(
+            sub="admin-1",
+            permissions=["persona_preset:admin"],
+        ),
+    )
+
+    assert manager.calls == [("persona-1", "admin-1", True)]
+
+
 @pytest.mark.asyncio
 async def test_create_channel_rejects_unknown_project_id(
     monkeypatch: pytest.MonkeyPatch,

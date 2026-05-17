@@ -16,6 +16,7 @@ class FeishuFileSenderMixin:
     """Mixin providing file upload/download and media send operations."""
 
     _client: Any
+    _resolve_receive_id: Any
     _chat_mode_cache: OrderedDict
     _FILE_TYPE_MAP: dict[str, str]
     _REPLY_FALLBACK_ERROR_CODES: set[int]

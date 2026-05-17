@@ -193,6 +193,15 @@ class _FakePersonaPresetManager:
         )()
 
 
+class _FakeSessionManager:
+    def __init__(self) -> None:
+        self.updates: list[tuple[str, Any]] = []
+
+    async def update_session(self, session_id: str, session_update: Any):
+        self.updates.append((session_id, session_update))
+        return None
+
+
 class _FakeProjectStorage:
     def __init__(self) -> None:
         self.created_names: list[tuple[str, str]] = []
@@ -334,6 +343,7 @@ async def test_feishu_handler_applies_channel_persona_preset(
 ) -> None:
     fake_task_manager = _FakeTaskManager()
     fake_manager = _FakeManager()
+    fake_session_manager = _FakeSessionManager()
 
     async def _fake_execute_feishu_agent(**kwargs: Any):
         yield {"event": "done", "data": {}}
@@ -357,6 +367,10 @@ async def test_feishu_handler_applies_channel_persona_preset(
     monkeypatch.setattr(
         "src.infra.persona_preset.manager.PersonaPresetManager",
         lambda: _FakePersonaPresetManager(),
+    )
+    monkeypatch.setattr(
+        "src.infra.session.manager.SessionManager",
+        lambda: fake_session_manager,
     )
     monkeypatch.setattr(feishu_handler, "execute_feishu_agent", _fake_execute_feishu_agent)
     monkeypatch.setattr(feishu_handler, "_process_events", _no_op_process_events)
@@ -390,6 +404,14 @@ async def test_feishu_handler_applies_channel_persona_preset(
     assert submit_call["agent_options"] == {"model_id": "model-1"}
     assert submit_call["enabled_skills"] == ["planning"]
     assert submit_call["persona_system_prompt"] == "Plan first."
+    session_id, session_update = fake_session_manager.updates[0]
+    metadata = session_update.metadata
+    assert session_id == "feishu_chat-1"
+    assert metadata["persona_preset_id"] == "persona-1"
+    assert metadata["persona_preset_name"] == "Planner"
+    assert metadata["persona_avatar"] == "icon:brain"
+    assert metadata["persona_snapshot"]["system_prompt"] == "Plan first."
+    assert metadata["enabled_skills"] == ["planning"]
 
 
 @pytest.mark.asyncio

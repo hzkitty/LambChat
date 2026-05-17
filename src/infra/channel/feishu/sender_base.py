@@ -21,7 +21,9 @@ class FeishuBaseSenderMixin:
     """
 
     _client: Any
+    config: Any
     _chat_mode_cache: OrderedDict
+    _feishu_http_client: httpx.AsyncClient | None = None
 
     _FILE_TYPE_MAP = {
         ".opus": "opus",
@@ -40,7 +42,7 @@ class FeishuBaseSenderMixin:
     _tenant_access_token_expires_at: float = 0.0
 
     def _get_feishu_http_client(self) -> httpx.AsyncClient:
-        client = getattr(self, "_feishu_http_client", None)
+        client: httpx.AsyncClient | None = getattr(self, "_feishu_http_client", None)
         if client is None or getattr(client, "is_closed", False):
             client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
             self._feishu_http_client = client

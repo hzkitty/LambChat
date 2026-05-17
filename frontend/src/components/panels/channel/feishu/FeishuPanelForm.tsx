@@ -10,6 +10,7 @@ import type { TFunction } from "i18next";
 import { LoadingSpinner } from "../../../common/LoadingSpinner";
 import { ChannelAgentSelect } from "../ChannelAgentSelect";
 import { ChannelModelSelect } from "../ChannelModelSelect";
+import { ChannelPersonaSelect } from "../ChannelPersonaSelect";
 import {
   DEFAULT_AUDIO_TRANSCRIBE_PROMPT,
   PREDEFINED_EMOJIS,
@@ -37,6 +38,7 @@ interface FeishuPanelFormProps {
   audioTranscribePrompt: string;
   agentId: string | null;
   modelId: string | null;
+  personaPresetId: string | null;
   credentialMode: "scan" | "manual";
   registrationStatus: string;
   registrationQrUrl: string | null;
@@ -57,6 +59,7 @@ interface FeishuPanelFormProps {
   setAudioTranscribePrompt: (value: string) => void;
   setAgentId: (value: string | null) => void;
   setModelId: (value: string | null) => void;
+  setPersonaPresetId: (value: string | null) => void;
   setCredentialMode: (value: "scan" | "manual") => void;
   handleStartRegistration: () => void;
   handleTest: () => void;
@@ -78,13 +81,15 @@ function FeishuToggle({
       aria-checked={checked}
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors ${
-        checked ? "bg-[var(--theme-primary)]" : "bg-theme-primary-light"
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 ${
+        checked
+          ? "bg-amber-500 shadow-sm shadow-amber-500/25"
+          : "bg-stone-200 dark:bg-stone-700"
       }`}
     >
       <span
-        className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-          checked ? "translate-x-4" : "translate-x-0.5"
+        className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          checked ? "translate-x-[18px]" : "translate-x-[3px]"
         }`}
       />
     </button>
@@ -112,6 +117,7 @@ export function FeishuPanelForm({
   audioTranscribePrompt,
   agentId,
   modelId,
+  personaPresetId,
   credentialMode,
   registrationStatus,
   registrationQrUrl,
@@ -132,6 +138,7 @@ export function FeishuPanelForm({
   setAudioTranscribePrompt,
   setAgentId,
   setModelId,
+  setPersonaPresetId,
   setCredentialMode,
   handleStartRegistration,
   handleTest,
@@ -208,13 +215,15 @@ export function FeishuPanelForm({
           </div>
           <button
             onClick={() => setEnabled(!enabled)}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-              enabled ? "bg-[var(--theme-primary)]" : "bg-theme-primary-light"
+            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 ${
+              enabled
+                ? "bg-amber-500 shadow-sm shadow-amber-500/25"
+                : "bg-stone-200 dark:bg-stone-700"
             }`}
           >
             <span
-              className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? "translate-x-4" : "translate-x-0.5"
+              className={`pointer-events-none inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                enabled ? "translate-x-[18px]" : "translate-x-[3px]"
               }`}
             />
           </button>
@@ -227,14 +236,14 @@ export function FeishuPanelForm({
           {t("feishu.credentials", "App Credentials")}
         </div>
 
-        <div className="mb-4 grid grid-cols-2 rounded-lg bg-[var(--glass-bg-subtle)] p-1">
+        <div className="mb-4 grid grid-cols-2 rounded-lg border border-[var(--theme-border)] bg-[var(--glass-bg-subtle)] p-1">
           <button
             type="button"
             onClick={() => setCredentialMode("scan")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-md px-3 py-2 text-sm font-medium transition-all ${
               credentialMode === "scan"
-                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm"
-                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
+                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm border border-[var(--theme-border)]"
+                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] border border-transparent"
             }`}
           >
             {t("feishu.scanCreate", "Scan to Create")}
@@ -242,10 +251,10 @@ export function FeishuPanelForm({
           <button
             type="button"
             onClick={() => setCredentialMode("manual")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-md px-3 py-2 text-sm font-medium transition-all ${
               credentialMode === "manual"
-                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm"
-                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)]"
+                ? "bg-[var(--theme-bg-card)] text-[var(--theme-text)] shadow-sm border border-[var(--theme-border)]"
+                : "text-[var(--theme-text-secondary)] hover:text-[var(--theme-text)] border border-transparent"
             }`}
           >
             {t("feishu.manualFill", "Manual")}
@@ -286,7 +295,7 @@ export function FeishuPanelForm({
                     <LoadingSpinner size="md" />
                   )}
                 </div>
-                <div className="mt-3 text-sm font-medium text-amber-600">
+                <div className="mt-3 text-sm font-medium text-[var(--theme-primary)]">
                   {registrationStatus === "qr_ready"
                     ? t("feishu.waitingForScan", "Waiting for scan")
                     : registrationStatus ||
@@ -414,12 +423,14 @@ export function FeishuPanelForm({
               onClick={() => setUseCustomEmoji(!useCustomEmoji)}
               className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
                 useCustomEmoji
-                  ? "bg-[var(--theme-primary)] text-white"
+                  ? "bg-[var(--theme-primary)] text-white dark:text-[var(--theme-bg-card)]"
                   : "bg-[var(--glass-bg-subtle)] text-theme-text-secondary hover:bg-theme-primary-light"
               }`}
             >
               <Sparkles size={12} />
-              {t("feishu.custom", "Custom")}
+              {useCustomEmoji
+                ? t("feishu.preset", "Preset")
+                : t("feishu.custom", "Custom")}
             </button>
           </div>
 
@@ -443,24 +454,27 @@ export function FeishuPanelForm({
               </p>
             </>
           ) : (
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
-              {PREDEFINED_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji.value}
-                  type="button"
-                  onClick={() => setReactEmoji(emoji.value)}
-                  className={`flex flex-col items-center gap-0.5 rounded-lg border px-2 py-1.5 transition-all ${
-                    reactEmoji === emoji.value
-                      ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                      : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
-                  }`}
-                >
-                  <span className="text-base">{emoji.emoji}</span>
-                  <span className="text-[10px] text-[var(--theme-text-secondary)]">
-                    {t(emoji.labelKey)}
-                  </span>
-                </button>
-              ))}
+            <div className="max-h-[260px] overflow-y-auto rounded-lg border border-[var(--theme-border)] bg-[var(--glass-bg-subtle)] p-2 scrollbar-thin">
+              <div className="grid grid-cols-6 gap-1 sm:grid-cols-8">
+                {PREDEFINED_EMOJIS.map((emoji) => {
+                  const isSelected = reactEmoji === emoji.value;
+                  return (
+                    <button
+                      key={emoji.value}
+                      type="button"
+                      onClick={() => setReactEmoji(emoji.value)}
+                      title={t(emoji.labelKey)}
+                      className={`flex h-9 w-full items-center justify-center rounded-lg text-lg transition-all duration-150 ${
+                        isSelected
+                          ? "bg-[var(--theme-primary)]/15 ring-1 ring-[var(--theme-primary)]/40"
+                          : "hover:bg-[var(--theme-bg-card)]"
+                      }`}
+                    >
+                      {emoji.emoji}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -527,13 +541,19 @@ export function FeishuPanelForm({
             <button
               type="button"
               onClick={() => setGroupPolicy("mention")}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all ${
                 groupPolicy === "mention"
-                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
+                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)] shadow-sm shadow-[var(--theme-primary)]/10"
+                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)] hover:border-[var(--theme-text-secondary)]"
               }`}
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--glass-bg-subtle)] text-sm font-medium text-[var(--theme-text-secondary)]">
+              <div
+                className={`flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium transition-colors ${
+                  groupPolicy === "mention"
+                    ? "bg-[var(--theme-primary)] text-white dark:text-[var(--theme-bg-card)]"
+                    : "bg-[var(--glass-bg-subtle)] text-[var(--theme-text-secondary)]"
+                }`}
+              >
                 @
               </div>
               <div className="min-w-0">
@@ -548,13 +568,19 @@ export function FeishuPanelForm({
             <button
               type="button"
               onClick={() => setGroupPolicy("open")}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all ${
                 groupPolicy === "open"
-                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)]"
-                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)]"
+                  ? "border-[var(--theme-primary)] bg-[var(--theme-primary-light)] shadow-sm shadow-[var(--theme-primary)]/10"
+                  : "border-[var(--theme-border)] bg-[var(--theme-bg-card)] hover:bg-[var(--glass-bg-subtle)] hover:border-[var(--theme-text-secondary)]"
               }`}
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--glass-bg-subtle)] text-sm">
+              <div
+                className={`flex h-7 w-7 items-center justify-center rounded-md text-sm transition-colors ${
+                  groupPolicy === "open"
+                    ? "bg-[var(--theme-primary)]"
+                    : "bg-[var(--glass-bg-subtle)]"
+                }`}
+              >
                 💬
               </div>
               <div className="min-w-0">
@@ -576,6 +602,12 @@ export function FeishuPanelForm({
       </div>
       <div className="es-section">
         <ChannelModelSelect value={modelId} onChange={setModelId} />
+      </div>
+      <div className="es-section">
+        <ChannelPersonaSelect
+          value={personaPresetId}
+          onChange={setPersonaPresetId}
+        />
       </div>
 
       {/* Setup Guide */}
