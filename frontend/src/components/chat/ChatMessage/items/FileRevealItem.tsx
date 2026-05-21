@@ -12,6 +12,7 @@ import {
 } from "./fileRevealAutoOpen";
 import type { RevealPreviewRequest } from "./revealPreviewData";
 import type { RevealPreviewOpenSource } from "./revealPreviewState";
+import { openRevealPreview } from "./revealPreviewActions";
 import { useSessionImageGallery } from "../sessionImageGallery";
 
 function MediaSkeleton({ aspectRatio = "16/9" }: { aspectRatio?: string }) {
@@ -186,7 +187,7 @@ export function FileRevealItem({
   const openPreview = useCallback(
     (source: RevealPreviewOpenSource) => {
       if (!previewAutoOpenKey || !previewRequest) return;
-      onOpenPreview?.(previewRequest, source);
+      openRevealPreview(previewRequest, source, onOpenPreview);
     },
     [previewAutoOpenKey, onOpenPreview, previewRequest],
   );
@@ -215,7 +216,9 @@ export function FileRevealItem({
     });
     if (!decision) return;
 
-    const opened = previewRequest && onOpenPreview?.(previewRequest, "auto");
+    const opened =
+      previewRequest &&
+      openRevealPreview(previewRequest, "auto", onOpenPreview);
     if (opened) {
       markFileRevealPreviewAutoOpened(previewAutoOpenKey);
     }

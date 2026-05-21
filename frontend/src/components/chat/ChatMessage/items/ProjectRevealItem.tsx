@@ -21,6 +21,7 @@ import {
   shouldReplaceProjectRevealFiles,
 } from "./projectRevealState";
 import type { RevealPreviewOpenSource } from "./revealPreviewState";
+import { openRevealPreview } from "./revealPreviewActions";
 
 export function ProjectRevealItem({
   args,
@@ -96,12 +97,13 @@ export function ProjectRevealItem({
     source: RevealPreviewOpenSource = "manual",
   ) => {
     if (!previewRequest) return;
-    onOpenPreview?.(
+    openRevealPreview(
       {
         ...previewRequest,
         openInFullscreen,
       },
       source,
+      onOpenPreview,
     );
   };
 
@@ -117,7 +119,7 @@ export function ProjectRevealItem({
       return;
     }
 
-    const opened = onOpenPreview?.(previewRequest, "auto");
+    const opened = openRevealPreview(previewRequest, "auto", onOpenPreview);
 
     if (opened) {
       markProjectRevealPreviewAutoOpened(projectAutoOpenKey);
