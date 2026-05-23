@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Trash2, Pencil, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Pencil, ArrowLeft, Users } from "lucide-react";
 import { teamApi } from "../../services/api/team";
 import { TeamBuilder } from "./TeamBuilder";
 import type { Team } from "../../types/team";
+import { PanelHeader } from "../common/PanelHeader";
+import { nameToGradient } from "../common/cardUtils";
 
 type View = "list" | "editor";
 
@@ -60,14 +62,14 @@ export function TeamBuilderWrapper() {
 
   if (view === "editor") {
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center gap-2 p-2 border-b border-border">
+      <div className="skill-theme-shell flex h-full min-h-0 flex-col">
+        <div className="flex items-center gap-2 border-b border-[var(--theme-border)] px-3 py-2 sm:px-5">
           <button
             onClick={handleClose}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="btn-secondary h-8 px-2.5 text-xs"
           >
-            <ArrowLeft size={16} />
-            Back to teams
+            <ArrowLeft size={14} />
+            Back
           </button>
         </div>
         <div className="flex-1 min-h-0">
@@ -82,67 +84,120 @@ export function TeamBuilderWrapper() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <h2 className="text-lg font-semibold">Team Builder</h2>
-        <button
-          onClick={handleCreateNew}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
-        >
-          <Plus size={16} />
-          Create New Team
-        </button>
-      </div>
+    <div className="skill-theme-shell flex h-full min-h-0 flex-col">
+      <PanelHeader
+        className="skill-panel-header"
+        title="Teams"
+        subtitle="Compose role-based agent teams"
+        icon={
+          <Users size={18} className="text-stone-500 dark:text-stone-400" />
+        }
+        actions={
+          <button onClick={handleCreateNew} className="btn-primary h-9 text-sm">
+            <Plus size={15} />
+            New team
+          </button>
+        }
+      />
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="skill-content-area flex-1 overflow-y-auto px-4 py-4 sm:p-6">
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-muted-foreground">
-            Loading teams...
+          <div className="skill-empty-state">
+            <Users size={28} className="skill-empty-state__icon" />
+            <p className="skill-empty-state__title">Loading teams...</p>
           </div>
         ) : teams.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-2">
-            <p>No teams yet.</p>
+          <div className="skill-empty-state">
+            <div className="skill-empty-state__icon">
+              <Users size={28} />
+            </div>
+            <p className="skill-empty-state__title">No teams yet</p>
+            <p className="skill-empty-state__description">
+              Create a team by combining roles from your library.
+            </p>
             <button
               onClick={handleCreateNew}
-              className="text-primary underline text-sm"
+              className="btn-primary mt-4 h-9 text-sm"
             >
+              <Plus size={15} />
               Create your first team
             </button>
           </div>
         ) : (
-          <ul className="space-y-2">
-            {teams.map((team) => (
-              <li
-                key={team.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{team.name}</div>
-                  <div className="text-xs text-muted-foreground">
+          <div className="grid auto-grid-cols gap-3">
+            {teams.map((team) => {
+              const colors = nameToGradient(team.name);
+              const activeCount = team.members.filter((m) => m.enabled).length;
+              return (
+                <div
+                  key={team.id}
+                  className="team-card"
+                  style={{ "--team-accent": colors[0] } as React.CSSProperties}
+                >
+                  {/* Color dot + name row */}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="team-card__color-dot"
+                      style={{ background: colors[0] }}
+                    />
+                    <h3 className="team-card__name">{team.name}</h3>
+                    <div className="team-card__actions">
+                      <button
+                        onClick={() => handleEditTeam(team.id)}
+                        className="scb__action-btn scb__action-btn--ghost"
+                        title="Edit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTeam(team.id)}
+                        className="scb__action-btn scb__action-btn--ghost"
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="team-card__desc">
+                    {team.description || "A coordinated team of role agents."}
+                  </p>
+
+                  {/* Avatars */}
+                  {team.members.length > 0 && (
+                    <div className="team-card__avatars">
+                      {team.members.slice(0, 4).map((member) => (
+                        <div
+                          key={member.member_id}
+                          className="team-card__avatar-item"
+                          title={member.role_name}
+                        >
+                          <Users
+                            size={12}
+                            className="text-[var(--theme-text-secondary)]"
+                          />
+                        </div>
+                      ))}
+                      {team.members.length > 4 && (
+                        <div className="team-card__avatar-overflow">
+                          +{team.members.length - 4}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Meta */}
+                  <p className="team-card__meta">
                     {team.members.length} member
                     {team.members.length !== 1 ? "s" : ""}
-                    {team.description ? ` — ${team.description}` : ""}
-                  </div>
+                    {" · "}
+                    {activeCount} active
+                  </p>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleEditTeam(team.id)}
-                    className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"
-                    title="Edit team"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTeam(team.id)}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                    title="Delete team"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
