@@ -10,12 +10,16 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { MarkdownContent } from "../MarkdownContent";
-import { CopyButton } from "../../../common";
+import { CopyButton, ImageViewer } from "../../../common";
 import { dispatchPersonaPresetsChanged } from "../../../../hooks/personaPresetEvents";
 import { getPersonaPresetMutationDetail } from "./personaPresetToolResult";
 import type { McpContentBlock, McpMultiModalResult } from "./toolUtils";
 import { isMarkdownText, extractText } from "./toolUtils";
 import { ToolResultPanel } from "./ToolResultPanel";
+import {
+  extractGeneratedImageResults,
+  type GeneratedImageResult,
+} from "./toolImageResults";
 import {
   closeBlockPreview,
   getBlockPreview,
@@ -178,6 +182,82 @@ export function McpBlockPreview({ block }: { block: McpContentBlock }) {
   return null;
 }
 
+function GeneratedImageResults({ images }: { images: GeneratedImageResult[] }) {
+  const { t } = useTranslation();
+  const [activeImage, setActiveImage] = useState<GeneratedImageResult | null>(
+    null,
+  );
+  const activeImageIndex = activeImage
+    ? images.findIndex((image) => image.url === activeImage.url)
+    : -1;
+  const previousImage =
+    activeImageIndex > 0 ? images[activeImageIndex - 1] : null;
+  const nextImage =
+    activeImageIndex >= 0 && activeImageIndex < images.length - 1
+      ? images[activeImageIndex + 1]
+      : null;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-3">
+        {images.map((image) => (
+          <figure
+            key={image.url}
+            className="overflow-hidden rounded-md border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-900"
+          >
+            <button
+              type="button"
+              className="block w-full bg-stone-100 dark:bg-stone-950"
+              onClick={() => setActiveImage(image)}
+              aria-label={t("chat.message.openImage", "Open image")}
+            >
+              <img
+                src={image.url}
+                alt={image.name}
+                className="mx-auto max-h-[70dvh] w-full object-contain"
+                loading="lazy"
+              />
+            </button>
+            <figcaption className="flex items-center gap-2 border-t border-stone-200 px-3 py-2 text-xs text-stone-600 dark:border-stone-700 dark:text-stone-300">
+              <ImageIcon
+                size={14}
+                className="shrink-0 text-stone-500 dark:text-stone-400"
+              />
+              <span className="min-w-0 flex-1 truncate">{image.name}</span>
+              <a
+                href={image.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 rounded-md p-1 text-stone-500 transition-colors hover:bg-stone-200 hover:text-stone-800 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+                aria-label={t("chat.message.openImage", "Open image")}
+              >
+                <ExternalLink size={14} />
+              </a>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+      {activeImage && (
+        <ImageViewer
+          isOpen
+          src={activeImage.url}
+          alt={activeImage.name}
+          onClose={() => setActiveImage(null)}
+          onPrevious={() => previousImage && setActiveImage(previousImage)}
+          onNext={() => nextImage && setActiveImage(nextImage)}
+          hasPrevious={!!previousImage}
+          hasNext={!!nextImage}
+          positionLabel={
+            activeImageIndex >= 0
+              ? `${activeImageIndex + 1} / ${images.length}`
+              : undefined
+          }
+        />
+      )}
+    </div>
+  );
+}
+
 // 工具结果渲染组件 — 支持 str / dict / MCP 多模态
 export function ToolResultContent({
   result,
@@ -201,6 +281,17 @@ export function ToolResultContent({
   }, [personaMutationDetail]);
 
   const textContent = extractText(result);
+  const generatedImages = useMemo(() => {
+    const directImages = extractGeneratedImageResults(result);
+    if (directImages.length > 0) return directImages;
+
+    if (typeof result !== "string") return [];
+    try {
+      return extractGeneratedImageResults(JSON.parse(result));
+    } catch {
+      return [];
+    }
+  }, [result]);
 
   // LangChain content blocks 数组: [{"type": "text", "text": "..."}, ...]
   if (isContentBlocksArray(result)) {
@@ -274,6 +365,10 @@ export function ToolResultContent({
         </div>
       </div>
     );
+  }
+
+  if (generatedImages.length > 0) {
+    return <GeneratedImageResults images={generatedImages} />;
   }
 
   // 富文本结果：dict 含 title/url/content 结构
