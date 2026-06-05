@@ -584,16 +584,16 @@ export function NotificationPanel() {
         actions={
           <button
             onClick={() => setIsCreating(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+            className="btn-primary h-10"
           >
             <Plus size={16} />
-            {t("notification.create")}
+            <span>{t("notification.create")}</span>
           </button>
         }
       />
 
       {/* Notification List */}
-      <div className="flex-1 overflow-y-auto py-2 sm:py-4 px-4 sm:p-6">
+      <div className="flex-1 overflow-y-auto px-4 py-2 sm:p-6 lg:px-8">
         {isLoading && notifications.length === 0 ? (
           <div className="flex h-40 items-center justify-center">
             <div className="relative h-8 w-8">
@@ -731,7 +731,7 @@ export function NotificationPanel() {
 
       {/* Pagination */}
       {total > limit && (
-        <div className="glass-divider bg-transparent px-4 py-4 sm:px-6">
+        <div className="glass-divider bg-transparent px-4 py-4 sm:px-6 lg:px-8">
           <Pagination
             page={Math.floor(skip / limit) + 1}
             pageSize={limit}

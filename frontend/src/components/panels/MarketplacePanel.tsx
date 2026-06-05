@@ -1,17 +1,8 @@
 import { useState, useEffect } from "react";
-import {
-  X,
-  ShoppingBag,
-  Plus,
-  RotateCw,
-  Search,
-  Tag,
-  ChevronDown,
-} from "lucide-react";
+import { X, ShoppingBag, Plus, RotateCw, Tag, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { PanelHeader } from "../common/PanelHeader";
-import { PanelSearchInput } from "../common/PanelSearchInput";
 import { PanelLoadingState } from "../common/PanelLoadingState";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { SkillFormSidebar } from "./SkillsPanel/SkillFormSidebar";
@@ -346,29 +337,16 @@ export function MarketplacePanel({ embedded = false }: MarketplacePanelProps) {
   return (
     <div className="skill-theme-shell flex h-full min-h-0 flex-col">
       {embedded && (
-        <div className="skill-panel-header">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500"
-                />
-                <PanelSearchInput
-                  type="text"
-                  value={searchQuery}
-                  onValueChange={setSearchQuery}
-                  className="panel-search h-10"
-                  placeholder={t("marketplace.searchPlaceholder")}
-                />
-              </div>
-              {filterMenu}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {headerActions}
-            </div>
-          </div>
-        </div>
+        <PanelHeader
+          className="skill-panel-header"
+          title={t("marketplace.title")}
+          searchOnly
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={t("marketplace.searchPlaceholder")}
+          searchAccessory={filterMenu}
+          searchActions={headerActions}
+        />
       )}
       {!embedded && (
         <PanelHeader

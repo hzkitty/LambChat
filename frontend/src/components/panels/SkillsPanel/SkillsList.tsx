@@ -5,7 +5,6 @@ import {
   Package,
   FolderOpen,
   Check,
-  Search,
   Tag,
   ChevronDown,
   Github,
@@ -13,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import { PanelHeader } from "../../common/PanelHeader";
-import { PanelSearchInput } from "../../common/PanelSearchInput";
 import { PanelLoadingState } from "../../common/PanelLoadingState";
 import { Pagination } from "../../common/Pagination";
 import { SkillCard } from "../../skill/SkillCard";
@@ -204,27 +202,16 @@ export function SkillsList({
   return (
     <>
       {embedded && (
-        <div className="skill-panel-header">
-          <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-2">
-            <div className="relative min-w-0 flex-1">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-stone-500"
-              />
-              <PanelSearchInput
-                type="text"
-                value={searchQuery}
-                onValueChange={setSearchQuery}
-                className="panel-search h-10"
-                placeholder={t("skills.searchPlaceholder")}
-              />
-            </div>
-            {filterMenu}
-            <div className="flex flex-nowrap shrink-0 items-center gap-1.5 sm:gap-2">
-              {headerActions}
-            </div>
-          </div>
-        </div>
+        <PanelHeader
+          className="skill-panel-header"
+          title={t("skills.title")}
+          searchOnly
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={t("skills.searchPlaceholder")}
+          searchAccessory={filterMenu}
+          searchActions={headerActions}
+        />
       )}
       {!embedded && (
         <PanelHeader

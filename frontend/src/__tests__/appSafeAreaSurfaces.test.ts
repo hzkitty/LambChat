@@ -181,6 +181,23 @@ test("portal dialogs and sheets reserve safe-area spacing", () => {
   }
 });
 
+test("profile mobile sheet relies on the portal viewport safe area only", () => {
+  const profileModal = readSource("../components/profile/ProfileModal.tsx");
+
+  assert.match(
+    profileModal,
+    /className="safe-area-viewport-padding fixed inset-0 z-\[300\] flex items-end/,
+  );
+  assert.doesNotMatch(
+    profileModal,
+    /renderFooter\(\s*"[^"]*\bsafe-area-bottom\b/,
+  );
+  assert.doesNotMatch(
+    profileModal,
+    /renderFooter\(\s*"[^"]*--safe-area-bottom-extra/,
+  );
+});
+
 test("standalone full-page fallback surfaces use safe-area spacing", () => {
   const oauth = readSource("../components/auth/OAuthCallback.tsx");
   const protectedRoute = readSource("../components/auth/ProtectedRoute.tsx");
