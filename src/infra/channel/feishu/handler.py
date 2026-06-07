@@ -549,6 +549,7 @@ async def execute_feishu_agent(
     enabled_skills: list[str] | None = None,
     persona_system_prompt: str | None = None,
     disabled_mcp_tools: list[str] | None = None,
+    recommendation_input: str | None = None,
     team_id: str | None = None,
     active_goal: dict | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
@@ -577,6 +578,7 @@ async def execute_feishu_agent(
             enabled_skills=enabled_skills,
             persona_system_prompt=persona_system_prompt,
             disabled_mcp_tools=disabled_mcp_tools,
+            recommendation_input=recommendation_input,
             team_id=team_id,
             active_goal=active_goal,
             goal_started_at=started_at,

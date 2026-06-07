@@ -283,7 +283,7 @@ export function PersonaEditorModal({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [skillDropdownOpen, displayedSkills, draft.skill_names]);
+  }, [skillActiveIndex, skillDropdownOpen, displayedSkills, draft.skill_names]);
 
   const handleSave = useCallback(async () => {
     if (!draft.name.trim() || !draft.system_prompt.trim()) return;

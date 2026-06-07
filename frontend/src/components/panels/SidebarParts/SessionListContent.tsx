@@ -109,6 +109,10 @@ interface SessionListContentProps {
   onToggleChatsCollapsed: () => void;
   autoExpandProjectId: string | null | undefined;
   onConsumeAutoExpandProjectId: (id: string) => void;
+  onMarkAllRead: (opts?: {
+    projectId?: string;
+    scheduledTaskId?: string;
+  }) => void;
 }
 
 export function SessionListContent({
@@ -145,6 +149,7 @@ export function SessionListContent({
   onToggleChatsCollapsed,
   autoExpandProjectId,
   onConsumeAutoExpandProjectId,
+  onMarkAllRead,
 }: SessionListContentProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -403,6 +408,7 @@ export function SessionListContent({
                   }
                   unreadBySession={unreadBySession}
                   favoritesOnly
+                  onMarkAllRead={onMarkAllRead}
                 />
               );
             })()}
@@ -437,6 +443,7 @@ export function SessionListContent({
                   forceExpandProjectId={autoExpandProjectId}
                   onConsumeAutoExpand={onConsumeAutoExpandProjectId}
                   unreadBySession={unreadBySession}
+                  onMarkAllRead={onMarkAllRead}
                 />
               ))}
 
@@ -498,6 +505,7 @@ export function SessionListContent({
                         scrollRoot={scrollEl}
                         draggingSessionId={sessionActions.draggingSessionId}
                         unreadBySession={unreadBySession}
+                        onMarkAllRead={onMarkAllRead}
                       />
                     ))
                   )}
@@ -531,7 +539,23 @@ export function SessionListContent({
                     {t("sidebar.chats")}
                   </span>
                   {chatsUnreadCount > 0 && (
-                    <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMarkAllRead();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          onMarkAllRead();
+                        }
+                      }}
+                      title={t("sidebar.markAllRead")}
+                      className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium leading-none text-white cursor-pointer hover:opacity-70 transition-opacity"
+                    >
                       {formatUnreadCount(chatsUnreadCount)}
                     </span>
                   )}

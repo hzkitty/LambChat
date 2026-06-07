@@ -491,6 +491,82 @@ export const SessionSidebar = forwardRef<
     [getProjectRef, projects, t, uncategorizedList],
   );
 
+  // ─── Mark all read ────────────────────────────────────────────────
+
+  const handleMarkAllRead = useCallback(
+    async (opts?: { projectId?: string; scheduledTaskId?: string }) => {
+      // Optimistic update: clear matching unread entries
+      const clearSessionList = (
+        sessionList: typeof uncategorizedList,
+        filterFn?: (s: BackendSession) => boolean,
+      ) => {
+        sessionList.sessions.forEach((s) => {
+          if (filterFn && !filterFn(s)) return;
+          if ((s.unread_count ?? 0) > 0) {
+            sessionList.updateSession({ ...s, unread_count: 0 });
+          }
+        });
+      };
+
+      const isUncategorized = !opts?.projectId && !opts?.scheduledTaskId;
+
+      if (isUncategorized) {
+        setUnreadBySession(() => new Map());
+        clearSessionList(uncategorizedList);
+      } else if (opts!.projectId) {
+        setUnreadBySession((prev) => {
+          const next = new Map(prev);
+          for (const [sid, entry] of next) {
+            if (entry.projectId === opts!.projectId) {
+              next.delete(sid);
+            }
+          }
+          return next;
+        });
+        clearSessionList(
+          uncategorizedList,
+          (s) => s.metadata?.project_id === opts!.projectId,
+        );
+        const handle = getProjectRef(opts!.projectId);
+        if (handle) {
+          handle.sessions.forEach((s) => {
+            if ((s.unread_count ?? 0) > 0) {
+              handle.updateSession({ ...s, unread_count: 0 });
+            }
+          });
+        }
+      } else if (opts!.scheduledTaskId) {
+        setUnreadBySession((prev) => {
+          const next = new Map(prev);
+          for (const [sid, entry] of next) {
+            if (entry.scheduledTaskId === opts!.scheduledTaskId) {
+              next.delete(sid);
+            }
+          }
+          return next;
+        });
+        for (const [, handle] of scheduledTaskRefs.current) {
+          handle.sessions.forEach((s) => {
+            if (
+              (s.unread_count ?? 0) > 0 &&
+              s.metadata?.scheduled_task_id === opts!.scheduledTaskId
+            ) {
+              handle.updateSession({ ...s, unread_count: 0 });
+            }
+          });
+        }
+      }
+
+      try {
+        await sessionApi.markAllRead(opts);
+      } catch (err) {
+        console.error("Failed to mark all as read:", err);
+        toast.error(t("sidebar.markAllReadFailed"));
+      }
+    },
+    [getProjectRef, t, uncategorizedList],
+  );
+
   // ─── Delete confirmation ────────────────────────────────────────
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -768,6 +844,7 @@ export const SessionSidebar = forwardRef<
             onToggleNavCollapsed={() => setIsNavCollapsed((v) => !v)}
             autoExpandProjectId={autoExpandProjectId ?? null}
             onConsumeAutoExpandProjectId={onConsumeAutoExpandProjectId!}
+            onMarkAllRead={handleMarkAllRead}
           />
         ) : (
           <div className="flex-1" />
@@ -839,6 +916,7 @@ export const SessionSidebar = forwardRef<
               onToggleNavCollapsed={() => setIsNavCollapsed((v) => !v)}
               autoExpandProjectId={autoExpandProjectId ?? null}
               onConsumeAutoExpandProjectId={onConsumeAutoExpandProjectId!}
+              onMarkAllRead={handleMarkAllRead}
             />
           ) : (
             <div className="flex-1" />
@@ -960,6 +1038,7 @@ export const SessionSidebar = forwardRef<
         currentSessionId={currentSessionId}
         anchorEl={recentChatsBtnRef.current}
         unreadCount={totalUnreadCount}
+        onMarkAllRead={handleMarkAllRead}
       />
 
       {!isMobile && (

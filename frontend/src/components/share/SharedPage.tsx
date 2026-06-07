@@ -460,7 +460,7 @@ export function SharedPage() {
       document.title = t("share.platformTitle", { appName: APP_NAME });
       setDescription(t("share.platformDescription", { appName: APP_NAME }));
     };
-  }, [data, messages, t]);
+  }, [data, messages, shareId, t]);
 
   // Fade out server-rendered preview when React content is ready
   useEffect(() => {
