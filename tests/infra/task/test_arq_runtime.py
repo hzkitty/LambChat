@@ -67,3 +67,22 @@ async def test_start_embedded_arq_worker_runs_with_signals_disabled(
 
     await runtime.stop()
     assert runtime.is_running is False
+
+
+@pytest.mark.asyncio
+async def test_stop_arq_runtime_releases_global_singleton() -> None:
+    runtime = arq_runtime.EmbeddedArqRuntime(worker_factory=_FakeWorker)
+    arq_runtime._runtime = runtime
+
+    await arq_runtime.stop_arq_runtime()
+
+    assert arq_runtime._runtime is None
+
+
+@pytest.mark.asyncio
+async def test_stop_arq_runtime_does_not_create_singleton_when_unused() -> None:
+    arq_runtime._runtime = None
+
+    await arq_runtime.stop_arq_runtime()
+
+    assert arq_runtime._runtime is None

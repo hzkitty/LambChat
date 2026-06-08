@@ -66,6 +66,14 @@ def _make_update_request(**overrides: Any) -> ScheduledTaskUpdate:
     return ScheduledTaskUpdate.model_validate(overrides)
 
 
+def test_clear_managed_task_signatures_releases_scheduler_registration_cache() -> None:
+    service_module._managed_task_signatures["task_1"] = "signature"
+
+    service_module.clear_managed_task_signatures()
+
+    assert service_module._managed_task_signatures == {}
+
+
 @pytest.fixture
 def service() -> ScheduledTaskService:
     service_module._managed_task_signatures.clear()

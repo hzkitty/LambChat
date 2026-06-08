@@ -144,6 +144,15 @@ def get_mcp_cache_pubsub() -> MCPGlobalCachePubSub:
     return _mcp_cache_pubsub
 
 
+async def close_mcp_cache_pubsub() -> None:
+    """Stop and release the MCP cache pub/sub singleton without creating it."""
+    global _mcp_cache_pubsub
+    pubsub = _mcp_cache_pubsub
+    _mcp_cache_pubsub = None
+    if pubsub is not None:
+        await pubsub.stop_listener()
+
+
 @dataclass
 class GlobalMCPEntry:
     """全局 MCP 缓存条目"""
@@ -633,6 +642,11 @@ async def invalidate_all_global_cache(*, publish: bool = True) -> int:
     if publish:
         await _publish_mcp_cache_invalidation("all")
     return count
+
+
+async def close_global_mcp_cache() -> int:
+    """Close and clear every cached global MCP manager for process shutdown."""
+    return await invalidate_all_global_cache(publish=False)
 
 
 async def warmup_global_cache(user_ids: list[str]) -> None:

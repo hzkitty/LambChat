@@ -62,6 +62,56 @@ async def test_clear_cache_by_model_tracks_and_drains_async_client_close() -> No
 
 
 @pytest.mark.asyncio
+async def test_close_cached_models_closes_and_clears_all_model_instances() -> None:
+    closed: list[str] = []
+
+    class _FakeAsyncClient:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        async def aclose(self) -> None:
+            closed.append(self.name)
+
+    class _FakeModel:
+        def __init__(self, name: str) -> None:
+            self.async_client = _FakeAsyncClient(name)
+
+    LLMClient._model_cache.clear()
+    LLMClient._model_cache[
+        (
+            "openai",
+            "gpt-a",
+            0.7,
+            None,
+            "sk-test-a",
+            None,
+            None,
+            None,
+            3,
+        )
+    ] = _FakeModel("a")  # type: ignore[assignment]
+    LLMClient._model_cache[
+        (
+            "openai",
+            "gpt-b",
+            0.7,
+            None,
+            "sk-test-b",
+            None,
+            None,
+            None,
+            3,
+        )
+    ] = _FakeModel("b")  # type: ignore[assignment]
+
+    assert LLMClient.close_cached_models() == 2
+    await LLMClient.drain_close_tasks(timeout=1)
+
+    assert sorted(closed) == ["a", "b"]
+    assert LLMClient._model_cache == {}
+
+
+@pytest.mark.asyncio
 async def test_get_model_rejects_disabled_model_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

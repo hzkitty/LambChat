@@ -1,10 +1,14 @@
 import { memo, useMemo } from "react";
 import { clsx } from "clsx";
-import { Clock, FolderOpen, FileText } from "lucide-react";
+import { FolderOpen, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { CollapsiblePill, CopyButton } from "../../../common";
+import { CollapsiblePill } from "../../../common";
 import { extractPaths } from "./toolUtils";
 import { openPersistentToolPanel } from "./persistentToolPanelState";
+import { ToolArgsBlock } from "./ToolArgsBlock";
+import { ToolHoverCopyButton } from "./ToolHoverCopyButton";
+import { ToolInlineDetails } from "./ToolInlineDetails";
+import { ToolDurationFooter } from "./ToolDurationFooter";
 
 const LsItem = memo(function LsItem({
   args,
@@ -24,22 +28,9 @@ const LsItem = memo(function LsItem({
   completedAt?: string;
 }) {
   const { t } = useTranslation();
-  const durationFooter = useMemo(() => {
-    if (!startedAt || !completedAt) return undefined;
-    const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-    if (ms < 0) return undefined;
-    const seconds = Math.round(ms / 1000);
-    const text =
-      seconds < 60
-        ? `${seconds}s`
-        : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-    return (
-      <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-stone-400 dark:text-stone-500 border-t border-stone-100 dark:border-stone-800">
-        <Clock size={11} className="shrink-0" />
-        <span className="tabular-nums">{text}</span>
-      </div>
-    );
-  }, [startedAt, completedAt]);
+  const durationFooter = (
+    <ToolDurationFooter startedAt={startedAt} completedAt={completedAt} />
+  );
   const dirPath = (args.path as string) || "/";
 
   const entries = useMemo(() => {
@@ -59,24 +50,21 @@ const LsItem = memo(function LsItem({
 
   const detailContent = canExpand && (
     <div className="p-4 sm:p-5 space-y-3">
-      <div className="group/args relative flex items-center gap-2 px-3 py-2 rounded-lg bg-stone-100 dark:bg-stone-800 text-sm text-stone-500 dark:text-stone-400 font-mono">
+      <ToolArgsBlock size="detail">
         <FolderOpen size={14} className="shrink-0 opacity-60" />
         <span className="truncate">{dirPath}</span>
         <span className="shrink-0 text-stone-400 dark:text-stone-500">
           {entries.length} items
         </span>
-        <div className="absolute top-1.5 right-1.5 opacity-0 group-hover/args:opacity-100 transition-opacity">
-          <CopyButton text={dirPath} size={12} />
-        </div>
-      </div>
+        <ToolHoverCopyButton text={dirPath} position="args" />
+      </ToolArgsBlock>
       <div className="relative group rounded-lg border border-stone-200/60 dark:border-stone-700/50 bg-stone-50 dark:bg-stone-900 overflow-auto max-h-[60dvh]">
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <CopyButton
-            text={entries.join("\n")}
-            size={14}
-            className="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
-          />
-        </div>
+        <ToolHoverCopyButton
+          text={entries.join("\n")}
+          size={14}
+          position="panelRaised"
+          copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+        />
         {entries.map((entry, i) => {
           const isDir = entry.endsWith("/") || entry.endsWith("\\");
           const name = isDir
@@ -142,25 +130,21 @@ const LsItem = memo(function LsItem({
         }}
       >
         {canExpand && (
-          <div className="mt-2 ml-4 pl-3 border-l-2 border-stone-200/60 dark:border-stone-700/50 max-h-80 overflow-y-auto min-w-0">
-            <div className="group/args relative flex items-center gap-2 mb-2 px-2 py-1.5 rounded-md bg-stone-100 dark:bg-stone-800 text-xs text-stone-500 dark:text-stone-400 font-mono">
+          <ToolInlineDetails>
+            <ToolArgsBlock size="compact">
               <FolderOpen size={12} className="shrink-0 opacity-60" />
               <span className="truncate">{dirPath}</span>
               <span className="shrink-0 text-stone-400 dark:text-stone-500">
                 {t("chat.message.toolItemCount", { count: entries.length })}
               </span>
-              <div className="absolute top-0.5 right-0.5 opacity-0 group-hover/args:opacity-100 transition-opacity">
-                <CopyButton text={dirPath} size={12} />
-              </div>
-            </div>
+              <ToolHoverCopyButton text={dirPath} position="argsCompact" />
+            </ToolArgsBlock>
             <div className="relative group max-h-48 overflow-y-auto rounded-md border border-stone-200/60 dark:border-stone-700/50 bg-stone-50 dark:bg-stone-900">
-              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                <CopyButton
-                  text={entries.join("\n")}
-                  size={12}
-                  className="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
-                />
-              </div>
+              <ToolHoverCopyButton
+                text={entries.join("\n")}
+                position="panelCompactRaised"
+                copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+              />
               {entries.map((entry, i) => {
                 const isDir = entry.endsWith("/") || entry.endsWith("\\");
                 const name = isDir
@@ -201,7 +185,7 @@ const LsItem = memo(function LsItem({
                 );
               })}
             </div>
-          </div>
+          </ToolInlineDetails>
         )}
       </CollapsiblePill>
     </>

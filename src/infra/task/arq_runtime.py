@@ -82,4 +82,8 @@ async def start_arq_runtime() -> None:
 
 
 async def stop_arq_runtime() -> None:
-    await get_arq_runtime().stop()
+    global _runtime
+    runtime = _runtime
+    _runtime = None
+    if runtime is not None:
+        await runtime.stop()

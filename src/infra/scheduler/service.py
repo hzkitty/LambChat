@@ -39,6 +39,11 @@ logger = get_logger(__name__)
 _managed_task_signatures: dict[str, str] = {}
 
 
+def clear_managed_task_signatures() -> None:
+    """Release in-process scheduler registration signatures."""
+    _managed_task_signatures.clear()
+
+
 class ScheduledTaskService:
     """CRUD + scheduler orchestration for dynamic scheduled tasks."""
 
@@ -75,6 +80,7 @@ class ScheduledTaskService:
                 "source_session_id": request.source_session_id,
                 "source_run_id": request.source_run_id,
                 "created_by": request.created_by,
+                "delivery": request.delivery,
                 "created_at": now,
                 "updated_at": now,
             }
@@ -292,6 +298,7 @@ class ScheduledTaskService:
             source_session_id=task.source_session_id,
             source_run_id=task.source_run_id,
             created_by=task.created_by,
+            delivery=task.delivery,
             last_run_at=task.last_run_at,
             last_run_status=task.last_run_status,
             last_run_id=task.last_run_id,

@@ -1,5 +1,6 @@
 """Team storage."""
 
+import asyncio
 import re
 import uuid
 from typing import TYPE_CHECKING, Any, Optional
@@ -397,11 +398,12 @@ class TeamStorage:
             if tag_filter:
                 query["tags"] = tag_filter
 
-        total = await self.collection.count_documents(query)
+        pref_task = asyncio.create_task(self._get_user_team_preference(owner_user_id))
+        total_task = asyncio.create_task(self.collection.count_documents(query))
+        total, pref = await asyncio.gather(total_task, pref_task)
         if total == 0:
             return [], 0
 
-        pref = await self._get_user_team_preference(owner_user_id)
         pinned_ids = pref["pinned"]
         favorite_ids = pref["favorite"]
         pipeline: list[dict[str, Any]] = [

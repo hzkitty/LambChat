@@ -583,6 +583,15 @@ class LLMClient:
         return len(to_delete)
 
     @staticmethod
+    def close_cached_models() -> int:
+        """Close all cached model clients and clear the in-process cache."""
+        cached_models = list(LLMClient._model_cache.values())
+        LLMClient._model_cache.clear()
+        for model in cached_models:
+            _safe_close_client(model)
+        return len(cached_models)
+
+    @staticmethod
     async def drain_close_tasks(timeout: float = 10.0) -> None:
         """Wait for deferred HTTP client close tasks during graceful shutdown."""
         tasks = list(_close_tasks)

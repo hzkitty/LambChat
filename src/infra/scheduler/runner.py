@@ -12,12 +12,14 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from src.infra.channel.manager import get_channel_coordinator
 from src.infra.chat.user_message_timestamp import format_user_message_with_timestamp
 from src.infra.logging import get_logger
 from src.infra.role.storage import RoleStorage
 from src.infra.scheduler.locks import acquire_task_lock, release_task_lock
 from src.infra.scheduler.runtime import get_runtime_scheduler
 from src.infra.scheduler.storage import get_scheduled_task_storage
+from src.infra.session.trace_storage import get_trace_storage
 from src.infra.user.storage import UserStorage
 from src.infra.utils.datetime import utc_now
 from src.kernel.config import settings
@@ -34,6 +36,17 @@ logger = get_logger(__name__)
 
 _POLL_INTERVAL = 2  # seconds between status checks when waiting for completion
 _DEFAULT_TIMEOUT = 600  # 10 minutes
+_ASSISTANT_EVENT_TYPES = {
+    "message",
+    "assistant:message",
+    "ai:message",
+    "assistant",
+    "ai",
+    "content",
+    "message:chunk",
+    "summary",
+}
+_ASSISTANT_ROLES = {"assistant", "ai"}
 
 
 @dataclass(frozen=True)
@@ -150,6 +163,9 @@ class ScheduledTaskRunner:
                     )
 
             assert final_attempt is not None
+            delivery_result = await self._deliver_success_result(task, final_attempt, run_id)
+            if delivery_result is not None:
+                final_attempt.result["delivery"] = delivery_result
             finished = utc_now()
             duration = int((finished - now).total_seconds() * 1000)
             update_payload: dict[str, Any] = {
@@ -361,6 +377,123 @@ class ScheduledTaskRunner:
             result=result,
             error_message=f"Unexpected agent run status: {session_status or 'unknown'}",
         )
+
+    async def _deliver_success_result(
+        self,
+        task: ScheduledTask,
+        attempt: _AttemptResult,
+        run_id: str,
+    ) -> dict[str, Any] | None:
+        """Send a successful scheduled-task result back to the configured channel."""
+        delivery = task.delivery
+        if (
+            attempt.status != RunStatus.SUCCESS
+            or delivery is None
+            or not delivery.enabled
+            or not delivery.send_on_success
+        ):
+            return None
+
+        session_id = attempt.result.get("session_id")
+        if not isinstance(session_id, str) or not session_id:
+            return {
+                "status": "skipped",
+                "reason": "missing_session_id",
+                "channel_type": delivery.channel_type.value,
+                "chat_id": delivery.chat_id,
+                "channel_instance_id": delivery.channel_instance_id,
+            }
+
+        events = await get_trace_storage().get_run_events(session_id, run_id)
+        content = self._extract_channel_delivery_text(events, delivery.max_content_chars)
+        if not content:
+            return {
+                "status": "skipped",
+                "reason": "empty_result",
+                "channel_type": delivery.channel_type.value,
+                "chat_id": delivery.chat_id,
+                "channel_instance_id": delivery.channel_instance_id,
+            }
+
+        try:
+            sent = await get_channel_coordinator().send_message(
+                task.owner_id,
+                delivery.channel_type,
+                delivery.chat_id,
+                content,
+                instance_id=delivery.channel_instance_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "[Runner] failed to deliver task=%s result to channel=%s chat=%s: %s",
+                task.id,
+                delivery.channel_type.value,
+                delivery.chat_id,
+                exc,
+            )
+            return {
+                "status": "failed",
+                "error": str(exc),
+                "channel_type": delivery.channel_type.value,
+                "chat_id": delivery.chat_id,
+                "channel_instance_id": delivery.channel_instance_id,
+            }
+
+        return {
+            "status": "sent" if sent else "failed",
+            **({} if sent else {"error": "channel_send_returned_false"}),
+            "channel_type": delivery.channel_type.value,
+            "chat_id": delivery.chat_id,
+            "channel_instance_id": delivery.channel_instance_id,
+        }
+
+    @staticmethod
+    def _extract_channel_delivery_text(
+        events: list[dict[str, Any]],
+        max_content_chars: int,
+    ) -> str:
+        """Extract assistant text from trace events for channel delivery."""
+        parts: list[str] = []
+        chunk_parts: list[str] = []
+
+        def flush_chunks() -> None:
+            if not chunk_parts:
+                return
+            chunk_text = "".join(chunk_parts).strip()
+            if chunk_text:
+                parts.append(chunk_text)
+            chunk_parts.clear()
+
+        for event in events:
+            event_type = str(event.get("event_type") or "")
+            data = event.get("data")
+            if not isinstance(data, dict):
+                continue
+            role = str(data.get("role") or "").lower()
+            if role in {"user", "human"}:
+                continue
+            if event_type == "message" and role not in _ASSISTANT_ROLES:
+                continue
+            if event_type not in _ASSISTANT_EVENT_TYPES and role not in _ASSISTANT_ROLES:
+                continue
+
+            content = data.get("content")
+            if content is None:
+                content = data.get("message")
+            if not isinstance(content, str) or not content.strip():
+                continue
+
+            if event_type == "message:chunk":
+                chunk_parts.append(content)
+            else:
+                flush_chunks()
+                parts.append(content.strip())
+
+        flush_chunks()
+        text = "\n".join(parts).strip()
+        if len(text) > max_content_chars:
+            return text[:max_content_chars].rstrip()
+        return text
 
 
 # ── Singleton ──────────────────────────────────────

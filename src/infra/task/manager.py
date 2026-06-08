@@ -747,6 +747,9 @@ class BackgroundTaskManager:
 
         await self._drain_release_tasks()
         await self._close_arq_pool()
+        global _task_manager
+        if _task_manager is self:
+            _task_manager = None
         logger.info("Task manager shutdown complete")
 
 

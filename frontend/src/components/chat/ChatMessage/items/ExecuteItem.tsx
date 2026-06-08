@@ -1,16 +1,12 @@
 import { memo, useMemo } from "react";
 import { clsx } from "clsx";
-import {
-  Clock,
-  Terminal,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-} from "lucide-react";
+import { Terminal, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { CollapsiblePill, CopyButton } from "../../../common";
+import { CollapsiblePill } from "../../../common";
 import { extractText } from "./toolUtils";
 import { openPersistentToolPanel } from "./persistentToolPanelState";
+import { ToolHoverCopyButton } from "./ToolHoverCopyButton";
+import { ToolDurationFooter } from "./ToolDurationFooter";
 
 const ExecuteItem = memo(function ExecuteItem({
   args,
@@ -30,22 +26,9 @@ const ExecuteItem = memo(function ExecuteItem({
   completedAt?: string;
 }) {
   const { t } = useTranslation();
-  const durationFooter = useMemo(() => {
-    if (!startedAt || !completedAt) return undefined;
-    const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-    if (ms < 0) return undefined;
-    const seconds = Math.round(ms / 1000);
-    const text =
-      seconds < 60
-        ? `${seconds}s`
-        : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-    return (
-      <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-stone-400 dark:text-stone-500 border-t border-stone-100 dark:border-stone-800">
-        <Clock size={11} className="shrink-0" />
-        <span className="tabular-nums">{text}</span>
-      </div>
-    );
-  }, [startedAt, completedAt]);
+  const durationFooter = (
+    <ToolDurationFooter startedAt={startedAt} completedAt={completedAt} />
+  );
   const command = (args.command as string) || "";
   const timeout = args.timeout as number | undefined;
 
@@ -98,13 +81,11 @@ const ExecuteItem = memo(function ExecuteItem({
             {timeout}s
           </span>
         )}
-        <div className="absolute top-1.5 right-1.5 opacity-0 group-hover/args:opacity-100 transition-opacity">
-          <CopyButton
-            text={command}
-            size={12}
-            className="!bg-white/10 hover:!bg-white/20 !text-stone-300 !border !border-stone-600"
-          />
-        </div>
+        <ToolHoverCopyButton
+          text={command}
+          position="args"
+          copyButtonClassName="!bg-white/10 hover:!bg-white/20 !text-stone-300 !border !border-stone-600"
+        />
       </div>
 
       {parsed.output && (
@@ -118,13 +99,12 @@ const ExecuteItem = memo(function ExecuteItem({
           >
             {parsed.output}
           </pre>
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <CopyButton
-              text={parsed.output}
-              size={14}
-              className="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
-            />
-          </div>
+          <ToolHoverCopyButton
+            text={parsed.output}
+            size={14}
+            position="panel"
+            copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+          />
         </div>
       )}
 
@@ -196,9 +176,7 @@ const ExecuteItem = memo(function ExecuteItem({
                   {timeout}s
                 </span>
               )}
-              <div className="absolute top-0.5 right-0.5 opacity-0 group-hover/args:opacity-100 transition-opacity">
-                <CopyButton text={command} size={12} />
-              </div>
+              <ToolHoverCopyButton text={command} position="argsCompact" />
             </div>
 
             {parsed.output && (
@@ -212,13 +190,11 @@ const ExecuteItem = memo(function ExecuteItem({
                 >
                   {parsed.output}
                 </pre>
-                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <CopyButton
-                    text={parsed.output}
-                    size={12}
-                    className="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
-                  />
-                </div>
+                <ToolHoverCopyButton
+                  text={parsed.output}
+                  position="panelCompact"
+                  copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                />
               </div>
             )}
 

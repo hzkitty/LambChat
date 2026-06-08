@@ -1067,7 +1067,7 @@
       "minutesAgo": "{{count}}分钟前",
       "monthsAgo": "{{count}}个月前"
     },
-    "title": "文件库",
+    "title": "文件管理",
     "tryDifferent": "尝试其他搜索关键词",
     "types": {
       "all": "全部",
@@ -1450,7 +1450,7 @@
   "nav": {
     "adminMarketplace": "管理员技能商店",
     "agents": "配置",
-    "channels": "渠道",
+    "channels": "接入渠道",
     "chat": "对话",
     "feedback": "反馈",
     "files": "文件",
@@ -1458,8 +1458,8 @@
     "groupFeature": "功能",
     "groupSystem": "系统",
     "marketplace": "技能商店",
-    "mcp": "MCP",
-    "memory": "记忆",
+    "mcp": "MCP 服务",
+    "memory": "记忆空间",
     "models": "模型",
     "more": "更多",
     "notifications": "通知公告",
@@ -1467,7 +1467,7 @@
     "roles": "角色",
     "scheduled-tasks": "定时任务",
     "settings": "设置",
-    "skills": "技能",
+    "skills": "技能中心",
     "systemSettings": "系统设置",
     "team": "团队构建",
     "userSettings": "用户管理",
@@ -2476,6 +2476,7 @@
     "updateFailed": "更新技能失败",
     "updateSuccess": "技能更新成功",
     "upload": "上传",
+    "uploadZip": "ZIP 上传",
     "uploadZipTitle": "上传技能 ZIP",
     "uploading": "上传中...",
     "userSkillVisible": "用户技能（仅对自己可见）"

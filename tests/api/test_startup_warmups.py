@@ -102,6 +102,25 @@ async def test_initialize_startup_indexes_runs_independent_groups_concurrently(
 
 
 @pytest.mark.asyncio
+async def test_startup_index_initializers_include_user_storage_indexes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    class _FakeUserStorage:
+        async def ensure_indexes_if_needed(self) -> None:
+            calls.append("user_storage")
+
+    monkeypatch.setattr("src.infra.user.storage.UserStorage", _FakeUserStorage)
+
+    initializers = dict(api_main._startup_index_initializers())
+
+    assert "user_storage" in initializers
+    await initializers["user_storage"]()
+    assert calls == ["user_storage"]
+
+
+@pytest.mark.asyncio
 async def test_run_startup_indexes_waits_for_index_initialization(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -217,6 +236,75 @@ async def test_stop_feishu_channels_for_shutdown_cancels_startup_task_before_sto
 
     assert task.cancelled() is True
     assert calls == ["startup_cancelled", "stop"]
+
+
+@pytest.mark.asyncio
+async def test_close_route_dependency_singletons_closes_cached_route_managers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def _close_feedback_manager() -> None:
+        calls.append("feedback")
+
+    async def _close_notification_manager() -> None:
+        calls.append("notification")
+
+    async def _close_revealed_file_storage() -> None:
+        calls.append("revealed_file")
+
+    async def _close_upload_route_dependencies() -> None:
+        calls.append("upload")
+
+    async def _close_persona_preset_manager() -> None:
+        calls.append("persona_preset")
+
+    monkeypatch.setattr(api_main.feedback, "close_feedback_manager", _close_feedback_manager)
+    monkeypatch.setattr(
+        api_main.notification,
+        "close_notification_manager",
+        _close_notification_manager,
+    )
+    monkeypatch.setattr(
+        "src.infra.revealed_file.storage.close_revealed_file_storage",
+        _close_revealed_file_storage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        api_main.upload,
+        "close_upload_route_dependencies",
+        _close_upload_route_dependencies,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "src.infra.persona_preset.manager.close_persona_preset_manager",
+        _close_persona_preset_manager,
+        raising=False,
+    )
+
+    await api_main._close_route_dependency_singletons()
+
+    assert calls == ["feedback", "notification", "revealed_file", "upload", "persona_preset"]
+
+
+@pytest.mark.asyncio
+async def test_close_session_sandbox_manager_for_shutdown_delegates_to_close_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def _close_session_sandbox_manager() -> None:
+        calls.append("sandbox_manager")
+
+    monkeypatch.setattr(
+        "src.infra.sandbox.session_manager.close_session_sandbox_manager",
+        _close_session_sandbox_manager,
+        raising=False,
+    )
+
+    await api_main._close_session_sandbox_manager_for_shutdown()
+
+    assert calls == ["sandbox_manager"]
 
 
 @pytest.mark.asyncio

@@ -65,6 +65,26 @@ async def test_acreate_store_initializes_singleton_once_under_concurrency(
 
 
 @pytest.mark.asyncio
+async def test_close_store_releases_singleton_and_calls_backend_close() -> None:
+    class _ClosableStore:
+        def __init__(self) -> None:
+            self.close_calls = 0
+
+        async def close(self) -> None:
+            self.close_calls += 1
+
+    store = _ClosableStore()
+    store_module._store_instance = store
+    store_module._store_initialized = True
+
+    await store_module.close_store()
+
+    assert store.close_calls == 1
+    assert store_module._store_instance is None
+    assert store_module._store_initialized is False
+
+
+@pytest.mark.asyncio
 async def test_abatch_limits_concurrent_operations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

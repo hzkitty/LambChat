@@ -502,6 +502,15 @@ def get_oauth_service() -> OAuthService:
     return _oauth_service
 
 
+async def close_oauth_service() -> None:
+    """Close the singleton OAuth service without creating it during shutdown."""
+    global _oauth_service
+    service = _oauth_service
+    _oauth_service = None
+    if service is not None:
+        await service.close()
+
+
 def _decode_apple_token_header(id_token: str) -> dict[str, Any]:
     """Decode Apple JWT header off the event loop."""
     header_b64 = id_token.split(".")[0]

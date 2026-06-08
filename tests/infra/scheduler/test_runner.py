@@ -9,7 +9,9 @@ import pytest
 
 from src.infra.scheduler.runner import ScheduledTaskRunner
 from src.infra.task.status import TaskStatus
+from src.kernel.schemas.channel import ChannelType
 from src.kernel.schemas.scheduled_task import (
+    ChannelDeliveryConfig,
     RunStatus,
     ScheduledTask,
     ScheduledTaskStatus,
@@ -137,6 +139,78 @@ async def test_runner_retries_until_success(
     assert retry_updates == [0, 1]
     final_update = mock_storage.update_run.call_args_list[-1].args[1]
     assert final_update["status"] == RunStatus.SUCCESS
+
+
+@pytest.mark.asyncio
+async def test_runner_sends_success_result_to_configured_channel(
+    mock_storage: AsyncMock,
+    mock_lock: None,
+) -> None:
+    task = _make_task(
+        delivery=ChannelDeliveryConfig(
+            channel_type="feishu",
+            chat_id="oc_target",
+            channel_instance_id="bot_a",
+        )
+    )
+    mock_storage.get_task = AsyncMock(return_value=task)
+    runner = ScheduledTaskRunner()
+    runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
+        return_value={
+            "session_status": "completed",
+            "session_id": "session_1",
+            "trace_id": "trace_1",
+        }
+    )
+
+    trace_storage = AsyncMock()
+    trace_storage.get_run_events = AsyncMock(
+        return_value=[
+            {"event_type": "user:message", "data": {"content": "Generate report"}},
+            {"event_type": "message", "data": {"role": "assistant", "content": "Report ready"}},
+        ]
+    )
+    coordinator = AsyncMock()
+    coordinator.send_message = AsyncMock(return_value=True)
+
+    with (
+        patch("src.infra.scheduler.runner.get_trace_storage", return_value=trace_storage),
+        patch("src.infra.scheduler.runner.get_channel_coordinator", return_value=coordinator),
+    ):
+        result = await runner.run("task_1")
+
+    assert result["status"] == RunStatus.SUCCESS.value
+    trace_storage.get_run_events.assert_awaited_once()
+    assert trace_storage.get_run_events.call_args.args[0] == "session_1"
+    sent_run_id = trace_storage.get_run_events.call_args.args[1]
+    assert isinstance(sent_run_id, str)
+    coordinator.send_message.assert_awaited_once_with(
+        "user_1",
+        ChannelType.FEISHU,
+        "oc_target",
+        "Report ready",
+        instance_id="bot_a",
+    )
+    final_update = mock_storage.update_run.call_args_list[-1].args[1]
+    assert final_update["status"] == RunStatus.SUCCESS
+    assert final_update["output_result"]["delivery"] == {
+        "status": "sent",
+        "channel_type": "feishu",
+        "chat_id": "oc_target",
+        "channel_instance_id": "bot_a",
+    }
+
+
+def test_extract_channel_delivery_text_uses_assistant_chunks_only() -> None:
+    events = [
+        {"event_type": "message", "data": {"role": "user", "content": "Do not send me"}},
+        {"event_type": "message:chunk", "data": {"content": "Hello "}},
+        {"event_type": "message:chunk", "data": {"content": "world"}},
+    ]
+
+    text = ScheduledTaskRunner._extract_channel_delivery_text(events, max_content_chars=100)
+
+    assert text == "Hello world"
 
 
 @pytest.mark.asyncio
