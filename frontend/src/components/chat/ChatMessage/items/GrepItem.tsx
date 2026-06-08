@@ -89,12 +89,10 @@ const GrepItem = memo(function GrepItem({
           {pattern}
         </span>
         {searchPath && (
-          <span className="text-stone-400 dark:text-stone-500">
-            in {searchPath}
-          </span>
+          <span className="text-theme-text-tertiary">in {searchPath}</span>
         )}
         {glob && (
-          <span className="shrink-0 px-2 py-0.5 rounded-md bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs">
+          <span className="shrink-0 px-2 py-0.5 rounded-md bg-theme-bg-subtle text-theme-text-secondary text-xs">
             {glob}
           </span>
         )}
@@ -102,7 +100,7 @@ const GrepItem = memo(function GrepItem({
       </ToolArgsBlock>
       {parsedResult.files.length > 0 && (
         <div>
-          <div className="text-xs text-stone-400 dark:text-stone-500 mb-2">
+          <div className="text-xs text-theme-text-tertiary mb-2">
             {t("chat.message.toolFileCount", {
               count: parsedResult.files.length,
             })}
@@ -111,14 +109,14 @@ const GrepItem = memo(function GrepItem({
             {parsedResult.files.slice(0, 20).map((f, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 font-mono"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-theme-bg-subtle text-xs text-theme-text-secondary font-mono"
               >
                 <FileText size={11} className="shrink-0 opacity-40" />
                 {f.split("/").pop() || f}
               </span>
             ))}
             {parsedResult.files.length > 20 && (
-              <span className="text-xs text-stone-400 dark:text-stone-500 px-1 py-1">
+              <span className="text-xs text-theme-text-tertiary px-1 py-1">
                 +{parsedResult.files.length - 20} more
               </span>
             )}
@@ -126,7 +124,7 @@ const GrepItem = memo(function GrepItem({
         </div>
       )}
       {outputMode === "content" && parsedResult.lines.length > 0 && (
-        <div className="relative group rounded-lg border border-stone-200/60 dark:border-stone-700/50 overflow-hidden">
+        <div className="relative group rounded-lg border border-theme-border overflow-hidden">
           <DeferredCodeMirrorViewer
             value={parsedResult.lines.join("\n")}
             lineNumbers={false}
@@ -136,7 +134,7 @@ const GrepItem = memo(function GrepItem({
             text={parsedResult.lines.join("\n")}
             size={14}
             position="panel"
-            copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+            copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
           />
         </div>
       )}
@@ -146,12 +144,12 @@ const GrepItem = memo(function GrepItem({
           return text &&
             parsedResult.lines.length === 0 &&
             parsedResult.files.length === 0 ? (
-            <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words p-3 rounded-lg bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-700/50">
+            <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words p-3 rounded-lg bg-theme-bg border border-theme-border">
               {text}
               <ToolHoverCopyButton
                 text={text}
                 position="result"
-                copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md"
+                copyButtonClassName="!bg-theme-bg-card/80 !rounded-md"
               />
             </pre>
           ) : null;
@@ -186,12 +184,12 @@ const GrepItem = memo(function GrepItem({
                 {pattern}
               </span>
               {searchPath && (
-                <span className="text-stone-400 dark:text-stone-500">
+                <span className="text-theme-text-tertiary">
                   {t("chat.message.toolInPath", { path: searchPath })}
                 </span>
               )}
               {glob && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">
+                <span className="shrink-0 px-1.5 py-0.5 rounded bg-theme-bg-subtle text-theme-text-secondary">
                   {glob}
                 </span>
               )}
@@ -199,7 +197,7 @@ const GrepItem = memo(function GrepItem({
             </ToolArgsBlock>
             {parsedResult.files.length > 0 && (
               <div className="mb-2">
-                <div className="text-xs text-stone-400 dark:text-stone-500 mb-1">
+                <div className="text-xs text-theme-text-tertiary mb-1">
                   {t("chat.message.toolFileCount", {
                     count: parsedResult.files.length,
                   })}
@@ -208,14 +206,14 @@ const GrepItem = memo(function GrepItem({
                   {parsedResult.files.slice(0, 10).map((f, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-xs text-stone-600 dark:text-stone-300 font-mono"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-theme-bg-subtle text-xs text-theme-text-secondary font-mono"
                     >
                       <FileText size={10} className="shrink-0 opacity-40" />
                       {f.split("/").pop() || f}
                     </span>
                   ))}
                   {parsedResult.files.length > 10 && (
-                    <span className="text-xs text-stone-400 dark:text-stone-500 px-1">
+                    <span className="text-xs text-theme-text-tertiary px-1">
                       {t("chat.message.toolMoreFiles", {
                         count: parsedResult.files.length - 10,
                       })}
@@ -225,7 +223,7 @@ const GrepItem = memo(function GrepItem({
               </div>
             )}
             {outputMode === "content" && parsedResult.lines.length > 0 && (
-              <div className="relative group max-h-48 overflow-y-auto rounded-md border border-stone-200/60 dark:border-stone-700/50">
+              <div className="relative group max-h-48 overflow-y-auto rounded-md border border-theme-border">
                 <DeferredCodeMirrorViewer
                   value={parsedResult.lines.slice(0, 50).join("\n")}
                   lineNumbers={false}
@@ -234,10 +232,10 @@ const GrepItem = memo(function GrepItem({
                 <ToolHoverCopyButton
                   text={parsedResult.lines.slice(0, 50).join("\n")}
                   position="panelCompact"
-                  copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                  copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
                 />
                 {parsedResult.lines.length > 50 && (
-                  <div className="text-stone-400 dark:text-stone-500 mt-1 text-xs px-2 pb-2">
+                  <div className="text-theme-text-tertiary mt-1 text-xs px-2 pb-2">
                     {t("chat.message.toolMoreLines", {
                       count: parsedResult.lines.length - 50,
                     })}
@@ -251,7 +249,7 @@ const GrepItem = memo(function GrepItem({
                 return text &&
                   parsedResult.lines.length === 0 &&
                   parsedResult.files.length === 0 ? (
-                  <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words overflow-y-auto min-w-0">
+                  <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words overflow-y-auto min-w-0">
                     {text}
                     <ToolHoverCopyButton text={text} position="resultCompact" />
                   </pre>

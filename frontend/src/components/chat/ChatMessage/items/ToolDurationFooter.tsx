@@ -12,7 +12,7 @@ export function ToolDurationFooter({
   if (seconds === null) return undefined;
 
   return (
-    <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-stone-400 dark:text-stone-500 border-t border-stone-100 dark:border-stone-800">
+    <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-theme-text-tertiary border-t border-theme-border-faint">
       <Clock size={11} className="shrink-0" />
       <span className="tabular-nums">{formatToolDuration(seconds)}</span>
     </div>

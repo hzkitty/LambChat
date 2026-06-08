@@ -110,7 +110,7 @@ interface SessionListContentProps {
   onMarkAllRead: (opts?: {
     projectId?: string;
     scheduledTaskId?: string;
-  }) => void;
+  }) => Promise<void> | void;
   markingReadId: string | null;
 }
 
@@ -226,6 +226,18 @@ export function SessionListContent({
       scheduledTaskUnreadByTaskRef.current = next;
     },
     [],
+  );
+  const handleScheduledTaskMarkAllRead = useCallback(
+    async (scheduledTaskId: string) => {
+      await onMarkAllRead({ scheduledTaskId });
+      scheduledTaskUnreadByTaskRef.current.delete(scheduledTaskId);
+      setScheduledTasks((prev) =>
+        prev.map((task) =>
+          task.id === scheduledTaskId ? { ...task, unread_count: 0 } : task,
+        ),
+      );
+    },
+    [onMarkAllRead],
   );
 
   return (
@@ -488,7 +500,9 @@ export function SessionListContent({
                         scrollRoot={scrollEl}
                         draggingSessionId={sessionActions.draggingSessionId}
                         unreadBySession={unreadBySession}
-                        onMarkAllRead={onMarkAllRead}
+                        onMarkAllRead={() =>
+                          handleScheduledTaskMarkAllRead(task.id)
+                        }
                         markingReadId={markingReadId}
                       />
                     ))

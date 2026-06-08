@@ -417,6 +417,12 @@ async def test_execute_agent_hides_injected_timestamp_from_display(
     assert "[User message sent at:" not in submitted["display_message"]
     assert "[User message sent at:" not in submitted["recommendation_input"]
     assert submitted["write_user_message_immediately"] is True
+    assert submitted["session_metadata"] == {
+        "source": "scheduled_task",
+        "scheduled_task_id": "task_1",
+        "scheduled_task_run_id": "run_1",
+        "hidden_from_conversation_list": True,
+    }
     assert session_manager.metadata == {
         "source": "scheduled_task",
         "scheduled_task_id": "task_1",
@@ -483,4 +489,10 @@ async def test_execute_agent_uses_arq_backend_when_enabled(
     assert submitted["run_id"] == "run_1"
     assert submitted["session_id"] == "session_1"
     assert submitted["display_message"] == "Run distributed report"
+    assert submitted["session_metadata"] == {
+        "source": "scheduled_task",
+        "scheduled_task_id": "task_1",
+        "scheduled_task_run_id": "run_1",
+        "hidden_from_conversation_list": True,
+    }
     assert submitted["write_user_message_immediately"] is True

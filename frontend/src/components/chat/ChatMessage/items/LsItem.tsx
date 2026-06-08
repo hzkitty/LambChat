@@ -53,17 +53,17 @@ const LsItem = memo(function LsItem({
       <ToolArgsBlock size="detail">
         <FolderOpen size={14} className="shrink-0 opacity-60" />
         <span className="truncate">{dirPath}</span>
-        <span className="shrink-0 text-stone-400 dark:text-stone-500">
+        <span className="shrink-0 text-theme-text-tertiary">
           {entries.length} items
         </span>
         <ToolHoverCopyButton text={dirPath} position="args" />
       </ToolArgsBlock>
-      <div className="relative group rounded-lg border border-stone-200/60 dark:border-stone-700/50 bg-stone-50 dark:bg-stone-900 overflow-auto max-h-[60dvh]">
+      <div className="relative group rounded-lg border border-theme-border bg-theme-bg overflow-auto max-h-[60dvh]">
         <ToolHoverCopyButton
           text={entries.join("\n")}
           size={14}
           position="panelRaised"
-          copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+          copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
         />
         {entries.map((entry, i) => {
           const isDir = entry.endsWith("/") || entry.endsWith("\\");
@@ -76,8 +76,8 @@ const LsItem = memo(function LsItem({
               key={i}
               className={clsx(
                 "flex items-center gap-2.5 px-4 py-2 text-sm font-mono",
-                "border-b border-stone-100 dark:border-stone-800 last:border-b-0",
-                "hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors",
+                "border-b border-theme-border-faint last:border-b-0",
+                "hover:bg-theme-bg-subtle transition-colors",
               )}
             >
               {isDir ? (
@@ -88,15 +88,15 @@ const LsItem = memo(function LsItem({
               ) : (
                 <FileText
                   size={14}
-                  className="shrink-0 text-stone-400 dark:text-stone-500"
+                  className="shrink-0 text-theme-text-tertiary"
                 />
               )}
               <span
                 className={clsx(
                   "truncate",
                   isDir
-                    ? "text-stone-700 dark:text-stone-200 font-medium"
-                    : "text-stone-600 dark:text-stone-300",
+                    ? "text-theme-text font-medium"
+                    : "text-theme-text-secondary",
                 )}
               >
                 {name}
@@ -134,16 +134,16 @@ const LsItem = memo(function LsItem({
             <ToolArgsBlock size="compact">
               <FolderOpen size={12} className="shrink-0 opacity-60" />
               <span className="truncate">{dirPath}</span>
-              <span className="shrink-0 text-stone-400 dark:text-stone-500">
+              <span className="shrink-0 text-theme-text-tertiary">
                 {t("chat.message.toolItemCount", { count: entries.length })}
               </span>
               <ToolHoverCopyButton text={dirPath} position="argsCompact" />
             </ToolArgsBlock>
-            <div className="relative group max-h-48 overflow-y-auto rounded-md border border-stone-200/60 dark:border-stone-700/50 bg-stone-50 dark:bg-stone-900">
+            <div className="relative group max-h-48 overflow-y-auto rounded-md border border-theme-border bg-theme-bg">
               <ToolHoverCopyButton
                 text={entries.join("\n")}
                 position="panelCompactRaised"
-                copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
               />
               {entries.map((entry, i) => {
                 const isDir = entry.endsWith("/") || entry.endsWith("\\");
@@ -156,8 +156,8 @@ const LsItem = memo(function LsItem({
                     key={i}
                     className={clsx(
                       "flex items-center gap-2 px-3 py-1 text-xs font-mono",
-                      "border-b border-stone-100 dark:border-stone-800 last:border-b-0",
-                      "hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors",
+                      "border-b border-theme-border-faint last:border-b-0",
+                      "hover:bg-theme-bg-subtle transition-colors",
                     )}
                   >
                     {isDir ? (
@@ -168,15 +168,15 @@ const LsItem = memo(function LsItem({
                     ) : (
                       <FileText
                         size={12}
-                        className="shrink-0 text-stone-400 dark:text-stone-500"
+                        className="shrink-0 text-theme-text-tertiary"
                       />
                     )}
                     <span
                       className={clsx(
                         "truncate",
                         isDir
-                          ? "text-stone-700 dark:text-stone-200 font-medium"
-                          : "text-stone-600 dark:text-stone-300",
+                          ? "text-theme-text font-medium"
+                          : "text-theme-text-secondary",
                       )}
                     >
                       {name}

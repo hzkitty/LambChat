@@ -93,8 +93,8 @@ const ExecuteItem = memo(function ExecuteItem({
           <pre
             className={clsx(
               "text-sm rounded-lg p-4 min-w-0",
-              "bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-700/50",
-              "text-stone-700 dark:text-stone-300 whitespace-pre-wrap break-words font-mono",
+              "bg-theme-bg border border-theme-border",
+              "text-theme-text-secondary whitespace-pre-wrap break-words font-mono",
             )}
           >
             {parsed.output}
@@ -103,7 +103,7 @@ const ExecuteItem = memo(function ExecuteItem({
             text={parsed.output}
             size={14}
             position="panel"
-            copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+            copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
           />
         </div>
       )}
@@ -165,14 +165,14 @@ const ExecuteItem = memo(function ExecuteItem({
         }}
       >
         {canExpand && (
-          <div className="mt-2 ml-4 pl-3 border-l-2 border-stone-200/60 dark:border-stone-700/50 space-y-2 max-h-80 overflow-y-auto min-w-0">
-            <div className="group/args relative px-2 py-1.5 rounded-md bg-stone-100 dark:bg-stone-800 text-xs text-stone-500 dark:text-stone-400 font-mono flex items-center gap-2 flex-wrap">
-              <span className="text-stone-700 dark:text-stone-200">$</span>
+          <div className="mt-2 ml-4 pl-3 border-l-2 border-theme-border space-y-2 max-h-80 overflow-y-auto min-w-0">
+            <div className="group/args relative px-2 py-1.5 rounded-md bg-theme-bg-subtle text-xs text-theme-text-tertiary font-mono flex items-center gap-2 flex-wrap">
+              <span className="text-theme-text">$</span>
               <span className="text-emerald-600 dark:text-emerald-400 break-all min-w-0">
                 {command}
               </span>
               {timeout && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300">
+                <span className="shrink-0 px-1.5 py-0.5 rounded bg-theme-bg-subtle text-theme-text-secondary">
                   {timeout}s
                 </span>
               )}
@@ -184,8 +184,8 @@ const ExecuteItem = memo(function ExecuteItem({
                 <pre
                   className={clsx(
                     "text-xs rounded-md p-2.5 min-w-0",
-                    "bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-700/50",
-                    "text-stone-700 dark:text-stone-300 whitespace-pre-wrap break-words font-mono",
+                    "bg-theme-bg border border-theme-border",
+                    "text-theme-text-secondary whitespace-pre-wrap break-words font-mono",
                   )}
                 >
                   {parsed.output}
@@ -193,7 +193,7 @@ const ExecuteItem = memo(function ExecuteItem({
                 <ToolHoverCopyButton
                   text={parsed.output}
                   position="panelCompact"
-                  copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                  copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
                 />
               </div>
             )}

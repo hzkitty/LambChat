@@ -250,6 +250,7 @@ class BackgroundTaskManager:
         team_id: Optional[str] = None,
         trace_id: Optional[str] = None,
         active_goal: Optional[Dict[str, Any]] = None,
+        session_metadata: Optional[Dict[str, Any]] = None,
         user_message_written: bool = False,
         write_user_message_immediately: bool = False,
     ) -> Tuple[str, str]:
@@ -285,6 +286,7 @@ class BackgroundTaskManager:
                 user_id,
                 project_id=project_id,
                 session_name=session_name,
+                session_metadata=session_metadata,
             )
 
             # 更新 MongoDB session 状态（包含 current_run_id）
@@ -370,6 +372,7 @@ class BackgroundTaskManager:
         arq_pool: Any | None = None,
         team_id: Optional[str] = None,
         active_goal: Optional[Dict[str, Any]] = None,
+        session_metadata: Optional[Dict[str, Any]] = None,
         write_user_message_immediately: bool = False,
     ) -> Tuple[str, str]:
         """Submit a task to arq after persisting serializable task context."""
@@ -385,6 +388,7 @@ class BackgroundTaskManager:
                 user_id,
                 project_id=project_id,
                 session_name=session_name,
+                session_metadata=session_metadata,
             )
             await task_executor._update_session_status(
                 session_id,

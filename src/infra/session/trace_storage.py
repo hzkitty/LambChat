@@ -718,15 +718,13 @@ class TraceStorage:
             if completed_only:
                 match_query["status"] = {"$ne": "running"}
 
-            if max_events is None:
-                max_events = _get_session_event_read_default_limit()
-            else:
+            if max_events is not None:
                 max_events = _clamp_event_read_limit(
                     max_events,
                     default=_get_session_event_read_default_limit(),
                 )
 
-            if max_events <= 0:
+            if max_events is not None and max_events <= 0:
                 return []
 
             pipeline: List[Dict[str, Any]] = [
@@ -745,9 +743,10 @@ class TraceStorage:
             ]
             if event_types:
                 pipeline.append({"$match": {"events.event_type": {"$in": event_types}}})
+            if max_events is not None:
+                pipeline.append({"$limit": max_events})
             pipeline.extend(
                 [
-                    {"$limit": max_events},
                     {
                         "$project": {
                             "_id": 0,

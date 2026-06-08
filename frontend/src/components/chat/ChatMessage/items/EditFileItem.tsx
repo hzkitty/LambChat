@@ -68,7 +68,7 @@ const EditFileItem = memo(function EditFileItem({
               text={oldString}
               size={14}
               position="panel"
-              copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-red-200 dark:!border-red-800"
+              copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-red-200 dark:!border-red-800"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@ const EditFileItem = memo(function EditFileItem({
               text={newString}
               size={14}
               position="panel"
-              copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-emerald-200 dark:!border-emerald-800"
+              copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-emerald-200 dark:!border-emerald-800"
             />
           </div>
         </div>
@@ -99,12 +99,12 @@ const EditFileItem = memo(function EditFileItem({
         (() => {
           const text = extractText(result);
           return text ? (
-            <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words p-3 rounded-lg bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-700/50">
+            <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words p-3 rounded-lg bg-theme-bg border border-theme-border">
               {text}
               <ToolHoverCopyButton
                 text={text}
                 position="result"
-                copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md"
+                copyButtonClassName="!bg-theme-bg-card/80 !rounded-md"
               />
             </pre>
           ) : null;
@@ -155,7 +155,7 @@ const EditFileItem = memo(function EditFileItem({
                   <ToolHoverCopyButton
                     text={oldString}
                     position="panelCompact"
-                    copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-red-200 dark:!border-red-800"
+                    copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-red-200 dark:!border-red-800"
                   />
                 </div>
               </div>
@@ -176,7 +176,7 @@ const EditFileItem = memo(function EditFileItem({
                   <ToolHoverCopyButton
                     text={newString}
                     position="panelCompact"
-                    copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-emerald-200 dark:!border-emerald-800"
+                    copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-emerald-200 dark:!border-emerald-800"
                   />
                 </div>
               </div>
@@ -185,7 +185,7 @@ const EditFileItem = memo(function EditFileItem({
               (() => {
                 const text = extractText(result);
                 return text ? (
-                  <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words mt-1 overflow-y-auto min-w-0">
+                  <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words mt-1 overflow-y-auto min-w-0">
                     {text}
                     <ToolHoverCopyButton text={text} position="resultCompact" />
                   </pre>

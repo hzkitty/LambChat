@@ -130,6 +130,35 @@ async def test_submit_arq_persists_payload_and_enqueues_job() -> None:
 
 
 @pytest.mark.asyncio
+async def test_submit_arq_passes_session_metadata_to_initial_session() -> None:
+    manager = BackgroundTaskManager()
+    fake_executor = _FakeExecutor()
+    payload_store = _FakePayloadStore()
+    arq_pool = _FakeArqPool()
+    manager._executor = fake_executor  # type: ignore[assignment]
+
+    session_metadata = {
+        "source": "scheduled_task",
+        "scheduled_task_id": "task-1",
+        "hidden_from_conversation_list": True,
+    }
+
+    await manager.submit_arq(
+        session_id="session-1",
+        agent_id="search",
+        message="hello",
+        user_id="user-1",
+        executor_key="agent_stream",
+        payload_store=cast(Any, payload_store),
+        arq_pool=arq_pool,
+        run_id="run-1",
+        session_metadata=session_metadata,
+    )
+
+    assert fake_executor.ensure_calls[0][1]["session_metadata"] == session_metadata
+
+
+@pytest.mark.asyncio
 async def test_submit_arq_does_not_keep_run_info_in_submitter_memory() -> None:
     manager = BackgroundTaskManager()
     fake_executor = _FakeExecutor()

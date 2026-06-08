@@ -56,6 +56,13 @@ export { GlobItem } from "./items/GlobItem";
 export { ExecuteItem } from "./items/ExecuteItem";
 export { FileRevealItem } from "./items/FileRevealItem";
 export { ProjectRevealItem } from "./items/ProjectRevealItem";
+export { ImageGenerateItem } from "./items/ImageGenerateItem";
+export { AudioTranscribeItem } from "./items/AudioTranscribeItem";
+export { ScheduledTaskItem } from "./items/ScheduledTaskItem";
+export { EnvVarItem } from "./items/EnvVarItem";
+export { PersonaItem } from "./items/PersonaItem";
+export { TeamItem } from "./items/TeamItem";
+export { SandboxMcpItem } from "./items/SandboxMcpItem";
 
 // Collapsible Tool Call Item (compact design)
 export function ToolCallItem({

@@ -86,7 +86,7 @@ const ReadFileItem = memo(function ReadFileItem({
       <ToolArgsBlock size="detail">
         <span className="truncate">{filePath}</span>
         {(offset !== undefined || limit !== undefined) && (
-          <span className="shrink-0 text-stone-400 dark:text-stone-500">
+          <span className="shrink-0 text-theme-text-tertiary">
             :L{offset ?? 1}
             {limit ? `-${(offset ?? 1) + limit}` : ""}
           </span>
@@ -101,7 +101,7 @@ const ReadFileItem = memo(function ReadFileItem({
         </div>
       )}
       {displayContent && (
-        <div className="relative group rounded-lg border border-stone-200/60 dark:border-stone-700/50 overflow-hidden">
+        <div className="relative group rounded-lg border border-theme-border overflow-hidden">
           <DeferredCodeMirrorViewer
             value={displayContent}
             filePath={filePath}
@@ -121,7 +121,7 @@ const ReadFileItem = memo(function ReadFileItem({
             text={displayContent}
             size={14}
             position="panel"
-            copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+            copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
           />
         </div>
       )}
@@ -155,7 +155,7 @@ const ReadFileItem = memo(function ReadFileItem({
               <ToolArgsBlock size="compact">
                 <span className="truncate">{filePath}</span>
                 {(offset !== undefined || limit !== undefined) && (
-                  <span className="shrink-0 text-stone-400 dark:text-stone-500">
+                  <span className="shrink-0 text-theme-text-tertiary">
                     :L{offset ?? 1}
                     {limit ? `-${(offset ?? 1) + limit}` : ""}
                   </span>
@@ -171,7 +171,7 @@ const ReadFileItem = memo(function ReadFileItem({
               </div>
             )}
             {displayContent && (
-              <div className="relative group rounded-md border border-stone-200/60 dark:border-stone-700/50">
+              <div className="relative group rounded-md border border-theme-border">
                 <DeferredCodeMirrorViewer
                   value={displayContent}
                   filePath={filePath}
@@ -187,7 +187,7 @@ const ReadFileItem = memo(function ReadFileItem({
                 <ToolHoverCopyButton
                   text={displayContent}
                   position="panelCompact"
-                  copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                  copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
                 />
               </div>
             )}

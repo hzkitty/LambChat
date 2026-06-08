@@ -25,11 +25,11 @@ test("tool argument blocks share detail and compact wrappers", () => {
   assert.match(source, /type ToolArgsBlockSize = "detail" \| "compact"/);
   assert.match(
     source,
-    /detail:\s*"group\/args relative flex items-center gap-2 px-3 py-2 rounded-lg bg-stone-100 dark:bg-stone-800 text-sm text-stone-500 dark:text-stone-400 font-mono"/,
+    /detail:\s*"group\/args relative flex items-center gap-2 px-3 py-2 rounded-lg bg-theme-bg-subtle text-sm text-theme-text-tertiary font-mono"/,
   );
   assert.match(
     source,
-    /compact:\s*"group\/args relative flex items-center gap-2 mb-2 px-2 py-1\.5 rounded-md bg-stone-100 dark:bg-stone-800 text-xs text-stone-500 dark:text-stone-400 font-mono"/,
+    /compact:\s*"group\/args relative flex items-center gap-2 mb-2 px-2 py-1\.5 rounded-md bg-theme-bg-subtle text-xs text-theme-text-tertiary font-mono"/,
   );
   assert.match(source, /wrap \? "flex-wrap" : ""/);
 
@@ -53,7 +53,7 @@ test("tool argument blocks share detail and compact wrappers", () => {
     );
     assert.doesNotMatch(
       consumer,
-      /group\/args relative flex items-center gap-2 (?:mb-2 )?px-(?:3 py-2 rounded-lg|2 py-1\.5 rounded-md) bg-stone-100 dark:bg-stone-800 text-(?:sm|xs) text-stone-500 dark:text-stone-400 font-mono/,
+      /group\/args relative flex items-center gap-2 (?:mb-2 )?px-(?:3 py-2 rounded-lg|2 py-1\.5 rounded-md) bg-theme-bg-subtle text-(?:sm|xs) text-theme-text-tertiary font-mono/,
       `${relativePath} should not duplicate ToolArgsBlock classes`,
     );
   }

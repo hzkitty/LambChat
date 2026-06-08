@@ -51,7 +51,7 @@ const WriteFileItem = memo(function WriteFileItem({
         <ToolHoverCopyButton text={filePath} position="args" />
       </ToolArgsBlock>
       {content && (
-        <div className="relative group rounded-lg border border-stone-200/60 dark:border-stone-700/50 overflow-hidden">
+        <div className="relative group rounded-lg border border-theme-border overflow-hidden">
           <DeferredCodeMirrorViewer
             value={content}
             filePath={filePath}
@@ -62,7 +62,7 @@ const WriteFileItem = memo(function WriteFileItem({
             text={content}
             size={14}
             position="panel"
-            copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+            copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
           />
         </div>
       )}
@@ -70,12 +70,12 @@ const WriteFileItem = memo(function WriteFileItem({
         (() => {
           const text = extractText(result);
           return text ? (
-            <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words p-3 rounded-lg bg-stone-50 dark:bg-stone-900 border border-stone-200/60 dark:border-stone-700/50">
+            <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words p-3 rounded-lg bg-theme-bg border border-theme-border">
               {text}
               <ToolHoverCopyButton
                 text={text}
                 position="result"
-                copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md"
+                copyButtonClassName="!bg-theme-bg-card/80 !rounded-md"
               />
             </pre>
           ) : null;
@@ -111,7 +111,7 @@ const WriteFileItem = memo(function WriteFileItem({
               <ToolHoverCopyButton text={filePath} position="argsCompact" />
             </ToolArgsBlock>
             {content && (
-              <div className="relative group rounded-md border border-stone-200/60 dark:border-stone-700/50">
+              <div className="relative group rounded-md border border-theme-border">
                 <DeferredCodeMirrorViewer
                   value={content}
                   filePath={filePath}
@@ -121,7 +121,7 @@ const WriteFileItem = memo(function WriteFileItem({
                 <ToolHoverCopyButton
                   text={content}
                   position="panelCompact"
-                  copyButtonClassName="!bg-white/80 dark:!bg-stone-800/80 !rounded-md !border !border-stone-200 dark:!border-stone-700"
+                  copyButtonClassName="!bg-theme-bg-card/80 !rounded-md !border !border-theme-border"
                 />
               </div>
             )}
@@ -129,7 +129,7 @@ const WriteFileItem = memo(function WriteFileItem({
               (() => {
                 const text = extractText(result);
                 return text ? (
-                  <pre className="group/result relative text-xs text-stone-500 dark:text-stone-400 whitespace-pre-wrap break-words mt-1 overflow-y-auto min-w-0">
+                  <pre className="group/result relative text-xs text-theme-text-tertiary whitespace-pre-wrap break-words mt-1 overflow-y-auto min-w-0">
                     {text}
                     <ToolHoverCopyButton text={text} position="resultCompact" />
                   </pre>

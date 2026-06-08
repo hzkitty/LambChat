@@ -315,6 +315,13 @@ class ScheduledTaskRunner:
         else:
             agent_options = None
 
+        session_metadata = {
+            "source": "scheduled_task",
+            "scheduled_task_id": task.id,
+            "scheduled_task_run_id": run_id,
+            "hidden_from_conversation_list": True,
+        }
+
         if use_arq_backend:
             _, trace_id = await task_manager.submit_arq(
                 session_id=session_id,
@@ -329,6 +336,7 @@ class ScheduledTaskRunner:
                 session_name=f"{task.name}",
                 display_message=display_message,
                 recommendation_input=display_message,
+                session_metadata=session_metadata,
                 write_user_message_immediately=True,
             )
         else:
@@ -351,16 +359,12 @@ class ScheduledTaskRunner:
                 session_name=f"{task.name}",
                 display_message=display_message,
                 recommendation_input=display_message,
+                session_metadata=session_metadata,
                 write_user_message_immediately=True,
             )
         await SessionManager().update_session_metadata(
             session_id,
-            {
-                "source": "scheduled_task",
-                "scheduled_task_id": task.id,
-                "scheduled_task_run_id": run_id,
-                "hidden_from_conversation_list": True,
-            },
+            session_metadata,
         )
 
         result = await self._wait_for_completion(

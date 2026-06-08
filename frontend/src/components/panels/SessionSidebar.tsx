@@ -28,6 +28,7 @@ import { useMoreMenu } from "../../hooks/useMoreMenu";
 import { useSessionSidebarEffects } from "../../hooks/useSessionSidebarEffects";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { DeleteProjectDialog } from "../common/DeleteProjectDialog";
+import { RecentChatsDialog } from "../sidebar/RecentChatsDialog";
 import type { ProjectItemHandle } from "../sidebar/ProjectItem";
 import type { ScheduledTaskItemHandle } from "../sidebar/ScheduledTaskSidebarItem";
 import { type UnreadBySession } from "../sidebar/unreadCounts";
@@ -105,6 +106,7 @@ export const SessionSidebar = forwardRef<
   // ─── Core state ──────────────────────────────────────────────────
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isRecentChatsOpen, setIsRecentChatsOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [internalCollapsed, setInternalCollapsed] = useState(true);
   const [isProjectsCollapsed, setIsProjectsCollapsed] = useState(false);
@@ -455,7 +457,7 @@ export const SessionSidebar = forwardRef<
               // close recent chats if open (handled by state below)
             }}
             onOpenSearch={() => setIsSearchOpen(true)}
-            onOpenRecentChats={() => {}}
+            onOpenRecentChats={() => setIsRecentChatsOpen(true)}
             onOpenFileLibrary={() => navigate("/files")}
             onOpenScheduledTasks={() => navigate("/scheduled-tasks")}
             hasMoreMenuItems={moreMenu.hasMoreMenuItems}
@@ -492,6 +494,21 @@ export const SessionSidebar = forwardRef<
           }}
         />
       )}
+
+      {/* Recent chats popover */}
+      <RecentChatsDialog
+        isOpen={isRecentChatsOpen}
+        onClose={() => setIsRecentChatsOpen(false)}
+        onSelectSession={(sessionId) => {
+          onSelectSession(sessionId);
+          setIsRecentChatsOpen(false);
+        }}
+        currentSessionId={currentSessionId}
+        anchorEl={recentChatsBtnRef.current}
+        unreadCount={totalUnreadCount}
+        onMarkAllRead={actions.handleMarkAllRead}
+        markingReadId={actions.markingReadId}
+      />
 
       {/* Delete session confirmation */}
       <ConfirmDialog
