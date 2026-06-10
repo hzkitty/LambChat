@@ -49,6 +49,11 @@ test("release workflow publishes branded desktop and mobile artifacts", () => {
   assert.match(workflow, /LambChat-\$env:RELEASE_TAG-Windows-Portable\.zip/);
   assert.match(workflow, /LambChat-\$\{RELEASE_TAG\}-macOS\.zip/);
   assert.match(workflow, /LambChat-\$\{RELEASE_TAG\}-macOS\.dmg/);
+  assert.doesNotMatch(
+    workflow,
+    /if \[ -z "\$app_path" \]; then\s+echo "No macOS \.app bundle found"\s+exit 1\s+fi/,
+  );
+  assert.match(workflow, /if \[ -n "\$app_path" \]; then[\s\S]*?ditto/);
   assert.doesNotMatch(workflow, /find frontend -type f/);
   assert.doesNotMatch(workflow, /-name '\*\.exe'/);
   assert.doesNotMatch(workflow, /mapfile/);

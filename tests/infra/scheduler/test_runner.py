@@ -64,11 +64,30 @@ def mock_lock():
 
 
 @pytest.mark.asyncio
+async def test_runner_loads_task_with_execution_projection(
+    mock_storage: AsyncMock,
+    mock_lock: None,
+) -> None:
+    task = _make_task()
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
+    runner = ScheduledTaskRunner()
+    runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
+        return_value={"session_status": "completed", "session_id": "session_1"}
+    )
+
+    result = await runner.run("task_1")
+
+    assert result["status"] == RunStatus.SUCCESS.value
+    mock_storage.get_task_for_execution.assert_awaited_once_with("task_1")
+    mock_storage.get_task.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_runner_lock_ttl_covers_all_attempts(
     mock_storage: AsyncMock,
 ) -> None:
     task = _make_task(timeout_seconds=60, max_retries=2)
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
 
     with (
         patch(
@@ -97,7 +116,7 @@ async def test_runner_skips_when_distributed_schedule_slot_is_claimed(
     mock_storage: AsyncMock,
 ) -> None:
     task = _make_task()
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock()  # type: ignore[method-assign]
 
@@ -125,7 +144,7 @@ async def test_runner_manual_run_bypasses_distributed_schedule_slot(
     mock_storage: AsyncMock,
 ) -> None:
     task = _make_task()
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
         return_value={"session_status": "completed", "session_id": "session_1"}
@@ -155,7 +174,7 @@ async def test_runner_allows_first_run_on_start_before_interval_due(
 ) -> None:
     now = datetime(2026, 6, 8, 5, 0, tzinfo=timezone.utc)
     task = _make_task(run_on_start=True, total_runs=0, created_at=now)
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     monkeypatch.setattr("src.infra.scheduler.runner.utc_now", lambda: now)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
@@ -185,7 +204,7 @@ async def test_runner_records_failed_agent_status_as_failed(
     mock_lock: None,
 ) -> None:
     task = _make_task()
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
         return_value={
@@ -211,7 +230,7 @@ async def test_runner_retries_until_success(
     mock_lock: None,
 ) -> None:
     task = _make_task(max_retries=1)
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
         side_effect=[
@@ -250,7 +269,7 @@ async def test_runner_sends_success_result_to_configured_channel(
             channel_instance_id="bot_a",
         )
     )
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
         return_value={
@@ -316,7 +335,7 @@ async def test_runner_does_not_retry_timeout(
     mock_lock: None,
 ) -> None:
     task = _make_task(max_retries=1)
-    mock_storage.get_task = AsyncMock(return_value=task)
+    mock_storage.get_task_for_execution = AsyncMock(return_value=task)
     runner = ScheduledTaskRunner()
     runner._execute_agent = AsyncMock(  # type: ignore[method-assign]
         return_value={"session_status": "timeout", "session_id": "session_1"}

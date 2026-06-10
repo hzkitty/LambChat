@@ -89,7 +89,7 @@ class ScheduledTaskRunner:
         Returns a dict like ``{"run_id": ..., "status": ..., "result": ...}``.
         """
         storage = get_scheduled_task_storage()
-        task = await storage.get_task(task_id)
+        task = await storage.get_task_for_execution(task_id)
         if task is None:
             logger.warning("[Runner] task %s not found, skipping", task_id)
             return {"skipped": True, "reason": "task_not_found"}

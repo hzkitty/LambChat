@@ -95,6 +95,7 @@ def mock_scheduler():
 def mock_storage():
     with patch("src.infra.scheduler.service.get_scheduled_task_storage") as mock:
         storage = AsyncMock()
+        storage.get_active_tasks_marker = AsyncMock(return_value=1)
         mock.return_value = storage
         yield storage
 
@@ -225,6 +226,7 @@ async def test_load_persisted_tasks(
     mock_scheduler: MagicMock,
 ) -> None:
     tasks = [_make_task(_id=f"task_{i}", name=f"Task {i}") for i in range(3)]
+    mock_storage.get_active_tasks_marker = AsyncMock(return_value=3)
     mock_storage.list_active_tasks = AsyncMock(return_value=tasks)
 
     count = await service.load_persisted_tasks()
@@ -284,12 +286,35 @@ async def test_load_persisted_tasks_does_not_reregister_unchanged_tasks(
 
 
 @pytest.mark.asyncio
+async def test_load_persisted_tasks_skips_full_reload_when_active_marker_unchanged(
+    service: ScheduledTaskService,
+    mock_storage: AsyncMock,
+    mock_scheduler: MagicMock,
+) -> None:
+    task = _make_task()
+    mock_storage.get_active_tasks_marker = AsyncMock(
+        side_effect=[
+            1,
+            1,
+        ]
+    )
+    mock_storage.list_active_tasks = AsyncMock(return_value=[task])
+
+    await service.load_persisted_tasks()
+    await service.load_persisted_tasks()
+
+    assert mock_storage.list_active_tasks.call_count == 1
+    assert mock_scheduler.register_job.call_count == 1
+
+
+@pytest.mark.asyncio
 async def test_load_persisted_tasks_unregisters_tasks_no_longer_active(
     service: ScheduledTaskService,
     mock_storage: AsyncMock,
     mock_scheduler: MagicMock,
 ) -> None:
     task = _make_task()
+    mock_storage.get_active_tasks_marker = AsyncMock(side_effect=[1, 2])
     mock_storage.list_active_tasks = AsyncMock(side_effect=[[task], []])
 
     await service.load_persisted_tasks()

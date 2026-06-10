@@ -48,6 +48,10 @@ def clear_managed_task_signatures() -> None:
 class ScheduledTaskService:
     """CRUD + scheduler orchestration for dynamic scheduled tasks."""
 
+    def __init__(self) -> None:
+        self._active_tasks_marker: int | None = None
+        self._active_task_count = 0
+
     # ── CRUD ───────────────────────────────────────
 
     async def create_task(
@@ -254,6 +258,11 @@ class ScheduledTaskService:
         Called once during process startup.
         """
         storage = get_scheduled_task_storage()
+        marker = await storage.get_active_tasks_marker()
+        if self._active_tasks_marker == marker:
+            logger.debug("[Service] scheduled tasks unchanged; skipped scheduler reload")
+            return self._active_task_count
+
         tasks = await storage.list_active_tasks()
         now = utc_now()
         active_task_ids: set[str] = set()
@@ -271,6 +280,8 @@ class ScheduledTaskService:
         for task_id in set(_managed_task_signatures) - active_task_ids:
             self._unregister_managed_task(task_id)
 
+        self._active_tasks_marker = marker
+        self._active_task_count = len(active_task_ids)
         logger.info("[Service] loaded %d persisted tasks into scheduler", len(tasks))
         return len(tasks)
 

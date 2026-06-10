@@ -179,3 +179,89 @@ async def test_apple_user_info_offloads_token_header_decode(monkeypatch) -> None
     assert calls == ["_decode_apple_token_header", "fake_decode"]
     assert user_info is not None
     assert user_info.email == "apple@example.com"
+
+
+async def test_github_user_info_returns_none_when_email_payload_is_not_a_list(
+    monkeypatch,
+) -> None:
+    from src.infra.auth import oauth as oauth_module
+    from src.infra.auth.oauth import OAuthService
+
+    class _FakeResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, **_kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def get(self, url: str, headers: dict[str, str]):
+            if url == "https://api.github.com/user":
+                return _FakeResponse({"id": 123, "login": "octo", "email": None})
+            if url == "https://api.github.com/user/emails":
+                return _FakeResponse({"message": "API rate limit exceeded"})
+            raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr(oauth_module.httpx, "AsyncClient", _FakeAsyncClient)
+
+    user_info = await OAuthService()._get_github_user_info({"access_token": "gho_token"})
+
+    assert user_info is None
+
+
+async def test_github_user_info_retries_transient_email_payload_error(
+    monkeypatch,
+) -> None:
+    from src.infra.auth import oauth as oauth_module
+    from src.infra.auth.oauth import OAuthService
+
+    class _FakeResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def json(self):
+            return self._payload
+
+    class _FakeAsyncClient:
+        def __init__(self, **_kwargs):
+            self.email_calls = 0
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def get(self, url: str, headers: dict[str, str]):
+            if url == "https://api.github.com/user":
+                return _FakeResponse({"id": 123, "login": "octo", "email": None})
+            if url == "https://api.github.com/user/emails":
+                self.email_calls += 1
+                if self.email_calls == 1:
+                    return _FakeResponse({"message": "Server Error"})
+                return _FakeResponse(
+                    [
+                        {
+                            "email": "octo@example.com",
+                            "primary": True,
+                            "verified": True,
+                        }
+                    ]
+                )
+            raise AssertionError(f"Unexpected URL: {url}")
+
+    monkeypatch.setattr(oauth_module.httpx, "AsyncClient", _FakeAsyncClient)
+
+    user_info = await OAuthService()._get_github_user_info({"access_token": "gho_token"})
+
+    assert user_info is not None
+    assert user_info.email == "octo@example.com"

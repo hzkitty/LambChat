@@ -19,6 +19,27 @@ logger = get_logger(__name__)
 
 _COLL_TASKS = "scheduled_tasks"
 _COLL_RUNS = "task_run_records"
+_COLL_METADATA = "scheduled_task_metadata"
+_SCHEDULER_DEFINITION_REVISION_ID = "scheduler_definition_revision"
+
+_TASK_EXECUTION_PROJECTION = {
+    "_id": 1,
+    "name": 1,
+    "agent_id": 1,
+    "trigger_type": 1,
+    "trigger_config": 1,
+    "input_payload": 1,
+    "status": 1,
+    "enabled": 1,
+    "run_on_start": 1,
+    "max_retries": 1,
+    "timeout_seconds": 1,
+    "owner_id": 1,
+    "delivery": 1,
+    "last_run_at": 1,
+    "total_runs": 1,
+    "created_at": 1,
+}
 
 
 class ScheduledTaskStorage:
@@ -66,10 +87,21 @@ class ScheduledTaskStorage:
     async def create_task(self, task: ScheduledTask) -> ScheduledTask:
         doc = task.model_dump(by_alias=True)
         await self._get_collection(_COLL_TASKS).insert_one(doc)
+        await self._bump_scheduler_definition_revision()
         return task
 
     async def get_task(self, task_id: str) -> Optional[ScheduledTask]:
         doc = await self._get_collection(_COLL_TASKS).find_one({"_id": task_id})
+        if not doc:
+            return None
+        return ScheduledTask(**doc)
+
+    async def get_task_for_execution(self, task_id: str) -> Optional[ScheduledTask]:
+        """Read only fields needed to execute a scheduled task."""
+        doc = await self._get_collection(_COLL_TASKS).find_one(
+            {"_id": task_id},
+            _TASK_EXECUTION_PROJECTION,
+        )
         if not doc:
             return None
         return ScheduledTask(**doc)
@@ -127,12 +159,23 @@ class ScheduledTaskStorage:
         )
         return [ScheduledTask(**doc) async for doc in cursor]
 
+    async def get_active_tasks_marker(self) -> int:
+        """Return an O(1) scheduler-definition revision marker."""
+        doc = await self._get_collection(_COLL_METADATA).find_one(
+            {"_id": _SCHEDULER_DEFINITION_REVISION_ID}
+        )
+        if not doc:
+            return 0
+        return int(doc.get("revision") or 0)
+
     async def update_task(self, task_id: str, updates: dict[str, Any]) -> bool:
         updates["updated_at"] = utc_now()
         result = await self._get_collection(_COLL_TASKS).update_one(
             {"_id": task_id},
             {"$set": updates},
         )
+        if result.modified_count > 0:
+            await self._bump_scheduler_definition_revision()
         return result.modified_count > 0
 
     async def delete_task(self, task_id: str) -> bool:
@@ -141,6 +184,8 @@ class ScheduledTaskStorage:
             {"_id": task_id},
             {"$set": {"status": ScheduledTaskStatus.DELETED, "updated_at": utc_now()}},
         )
+        if result.modified_count > 0:
+            await self._bump_scheduler_definition_revision()
         return result.modified_count > 0
 
     async def update_task_run_stats(self, task_id: str, run_id: str, run_status: RunStatus) -> None:
@@ -197,6 +242,16 @@ class ScheduledTaskStorage:
             collection.count_documents(query),
         )
         return records, total
+
+    async def _bump_scheduler_definition_revision(self) -> None:
+        await self._get_collection(_COLL_METADATA).update_one(
+            {"_id": _SCHEDULER_DEFINITION_REVISION_ID},
+            {
+                "$inc": {"revision": 1},
+                "$set": {"updated_at": utc_now()},
+            },
+            upsert=True,
+        )
 
 
 # ── Singleton ──────────────────────────────────────

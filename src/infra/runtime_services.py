@@ -200,13 +200,14 @@ async def start_runtime_services() -> None:
     if settings.ENABLE_MEMORY:
         start_memory_compaction_agent()
 
-    # Load dynamically-created scheduled tasks from DB
-    await get_scheduled_task_storage().ensure_indexes()
-    scheduled_task_service = ScheduledTaskService()
-    await scheduled_task_service.load_persisted_tasks()
-    register_scheduled_task_reconcile_job(scheduled_task_service)
+    if settings.ENABLE_SCHEDULED_TASK:
+        # Load dynamically-created scheduled tasks from DB only when the feature is enabled.
+        await get_scheduled_task_storage().ensure_indexes()
+        scheduled_task_service = ScheduledTaskService()
+        await scheduled_task_service.load_persisted_tasks()
+        register_scheduled_task_reconcile_job(scheduled_task_service)
 
-    get_runtime_scheduler().start()
+        get_runtime_scheduler().start()
 
 
 async def stop_runtime_services() -> None:

@@ -67,6 +67,75 @@ class _FakeRuntimeScheduler:
         self.start_calls += 1
 
 
+def _patch_runtime_service_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    enable_memory: bool,
+    enable_scheduled_task: bool,
+    task_manager: _FakeTaskManager,
+    settings_pubsub: _FakeAsyncService,
+    model_config_pubsub: _FakeAsyncService,
+    memory_pubsub: _FakeAsyncService,
+    websocket_manager: _FakeWebSocketManager,
+    channel_pubsub: _FakeAsyncService,
+    tool_cache_pubsub: _FakeAsyncService,
+    mcp_cache_pubsub: _FakeAsyncService,
+    scheduler: _FakeRuntimeScheduler,
+    scheduled_task_storage: _FakeScheduledTaskStorage,
+    scheduled_task_service: _FakeScheduledTaskService,
+    memory_compaction: SimpleNamespace | None = None,
+) -> None:
+    async def _noop() -> None:
+        return None
+
+    monkeypatch.setattr(
+        runtime_services,
+        "settings",
+        SimpleNamespace(
+            ENABLE_MEMORY=enable_memory,
+            ENABLE_SCHEDULED_TASK=enable_scheduled_task,
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(runtime_services, "get_task_manager", lambda: task_manager)
+    monkeypatch.setattr(runtime_services, "start_arq_runtime", _noop)
+    monkeypatch.setattr(runtime_services, "start_event_loop_lag_monitor", _noop)
+    monkeypatch.setattr(runtime_services, "get_settings_pubsub", lambda: settings_pubsub)
+    monkeypatch.setattr(runtime_services, "get_model_config_pubsub", lambda: model_config_pubsub)
+    monkeypatch.setattr(runtime_services, "get_memory_pubsub", lambda: memory_pubsub)
+    monkeypatch.setattr(runtime_services, "get_connection_manager", lambda: websocket_manager)
+    monkeypatch.setattr(
+        runtime_services, "get_channel_config_pubsub", lambda: channel_pubsub, raising=False
+    )
+    monkeypatch.setattr(
+        runtime_services, "get_tool_cache_pubsub", lambda: tool_cache_pubsub, raising=False
+    )
+    monkeypatch.setattr(
+        runtime_services, "get_mcp_cache_pubsub", lambda: mcp_cache_pubsub, raising=False
+    )
+    if memory_compaction is not None:
+        monkeypatch.setattr(
+            runtime_services,
+            "start_memory_compaction_agent",
+            lambda: setattr(memory_compaction, "start_calls", memory_compaction.start_calls + 1),
+            raising=False,
+        )
+    else:
+        monkeypatch.setattr(
+            runtime_services,
+            "start_memory_compaction_agent",
+            lambda: None,
+            raising=False,
+        )
+    monkeypatch.setattr(runtime_services, "get_runtime_scheduler", lambda: scheduler)
+    monkeypatch.setattr(
+        runtime_services,
+        "get_scheduled_task_storage",
+        lambda: scheduled_task_storage,
+    )
+    monkeypatch.setattr(runtime_services, "ScheduledTaskService", lambda: scheduled_task_service)
+
+
 @pytest.mark.asyncio
 async def test_start_runtime_services_starts_all_distributed_listeners(
     monkeypatch: pytest.MonkeyPatch,
@@ -95,7 +164,7 @@ async def test_start_runtime_services_starts_all_distributed_listeners(
     monkeypatch.setattr(
         runtime_services,
         "settings",
-        SimpleNamespace(ENABLE_MEMORY=True),
+        SimpleNamespace(ENABLE_MEMORY=True, ENABLE_SCHEDULED_TASK=True),
         raising=False,
     )
     monkeypatch.setattr(runtime_services, "get_task_manager", lambda: task_manager)
@@ -176,7 +245,7 @@ async def test_start_runtime_services_registers_scheduled_task_reconcile_job(
     monkeypatch.setattr(
         runtime_services,
         "settings",
-        SimpleNamespace(ENABLE_MEMORY=False),
+        SimpleNamespace(ENABLE_MEMORY=False, ENABLE_SCHEDULED_TASK=True),
         raising=False,
     )
     monkeypatch.setattr(runtime_services, "get_task_manager", lambda: task_manager)
@@ -207,6 +276,47 @@ async def test_start_runtime_services_registers_scheduled_task_reconcile_job(
 
 
 @pytest.mark.asyncio
+async def test_start_runtime_services_skips_scheduled_task_runtime_when_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_manager = _FakeTaskManager()
+    settings_pubsub = _FakeAsyncService()
+    model_config_pubsub = _FakeAsyncService()
+    memory_pubsub = _FakeAsyncService()
+    websocket_manager = _FakeWebSocketManager()
+    channel_pubsub = _FakeAsyncService()
+    tool_cache_pubsub = _FakeAsyncService()
+    mcp_cache_pubsub = _FakeAsyncService()
+    scheduler = _FakeRuntimeScheduler()
+    scheduled_task_storage = _FakeScheduledTaskStorage()
+    scheduled_task_service = _FakeScheduledTaskService()
+
+    _patch_runtime_service_dependencies(
+        monkeypatch,
+        enable_memory=False,
+        enable_scheduled_task=False,
+        task_manager=task_manager,
+        settings_pubsub=settings_pubsub,
+        model_config_pubsub=model_config_pubsub,
+        memory_pubsub=memory_pubsub,
+        websocket_manager=websocket_manager,
+        channel_pubsub=channel_pubsub,
+        tool_cache_pubsub=tool_cache_pubsub,
+        mcp_cache_pubsub=mcp_cache_pubsub,
+        scheduler=scheduler,
+        scheduled_task_storage=scheduled_task_storage,
+        scheduled_task_service=scheduled_task_service,
+    )
+
+    await runtime_services.start_runtime_services()
+
+    assert scheduled_task_storage.ensure_indexes_calls == 0
+    assert scheduled_task_service.load_calls == 0
+    assert scheduler.registered_job_ids == []
+    assert scheduler.start_calls == 0
+
+
+@pytest.mark.asyncio
 async def test_start_runtime_services_skips_memory_pubsub_when_memory_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -227,7 +337,7 @@ async def test_start_runtime_services_skips_memory_pubsub_when_memory_disabled(
     monkeypatch.setattr(
         runtime_services,
         "settings",
-        SimpleNamespace(ENABLE_MEMORY=False),
+        SimpleNamespace(ENABLE_MEMORY=False, ENABLE_SCHEDULED_TASK=True),
         raising=False,
     )
     monkeypatch.setattr(runtime_services, "get_task_manager", lambda: task_manager)

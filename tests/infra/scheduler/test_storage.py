@@ -82,6 +82,63 @@ class _ConcurrentCollection:
         return self.cursor
 
 
+class _FailingMarkerTaskCollection:
+    def find(self, *_args, **_kwargs):
+        raise AssertionError("marker lookup should not scan scheduled_tasks")
+
+
+class _MarkerMetadataCollection:
+    def __init__(self) -> None:
+        self.find_one_query: dict[str, Any] | None = None
+
+    async def find_one(self, query: dict[str, Any]):
+        self.find_one_query = query
+        return {"_id": "scheduler_definition_revision", "revision": 7}
+
+
+class _UpdateResult:
+    def __init__(self, modified_count: int) -> None:
+        self.modified_count = modified_count
+
+
+class _RevisionTaskCollection:
+    def __init__(self) -> None:
+        self.update_one_calls: list[tuple[dict[str, Any], dict[str, Any]]] = []
+
+    async def update_one(self, query: dict[str, Any], update: dict[str, Any]):
+        self.update_one_calls.append((query, update))
+        return _UpdateResult(modified_count=1)
+
+
+class _RevisionMetadataCollection:
+    def __init__(self) -> None:
+        self.update_one_calls: list[tuple[dict[str, Any], dict[str, Any], bool | None]] = []
+
+    async def update_one(
+        self,
+        query: dict[str, Any],
+        update: dict[str, Any],
+        upsert: bool | None = None,
+    ):
+        self.update_one_calls.append((query, update, upsert))
+        return _UpdateResult(modified_count=1)
+
+
+class _ExecutionProjectionCollection:
+    def __init__(self) -> None:
+        self.find_one_query: dict[str, Any] | None = None
+        self.find_one_projection: dict[str, int] | None = None
+
+    async def find_one(
+        self,
+        query: dict[str, Any],
+        projection: dict[str, int] | None = None,
+    ):
+        self.find_one_query = query
+        self.find_one_projection = projection
+        return _task_doc("task_1")
+
+
 @pytest.mark.asyncio
 async def test_list_tasks_paginated_fetches_rows_and_count_concurrently() -> None:
     storage = ScheduledTaskStorage()
@@ -92,6 +149,56 @@ async def test_list_tasks_paginated_fetches_rows_and_count_concurrently() -> Non
 
     assert total == 1
     assert [task.id for task in tasks] == ["task_1"]
+
+
+@pytest.mark.asyncio
+async def test_get_active_tasks_marker_reads_single_revision_document() -> None:
+    storage = ScheduledTaskStorage()
+    task_collection = _FailingMarkerTaskCollection()
+    metadata_collection = _MarkerMetadataCollection()
+    storage._collections["scheduled_tasks"] = task_collection
+    storage._collections["scheduled_task_metadata"] = metadata_collection
+
+    marker = await storage.get_active_tasks_marker()
+
+    assert marker == 7
+    assert metadata_collection.find_one_query == {"_id": "scheduler_definition_revision"}
+
+
+@pytest.mark.asyncio
+async def test_update_task_bumps_scheduler_definition_revision() -> None:
+    storage = ScheduledTaskStorage()
+    task_collection = _RevisionTaskCollection()
+    metadata_collection = _RevisionMetadataCollection()
+    storage._collections["scheduled_tasks"] = task_collection
+    storage._collections["scheduled_task_metadata"] = metadata_collection
+
+    updated = await storage.update_task("task_1", {"name": "new name"})
+
+    assert updated is True
+    assert metadata_collection.update_one_calls
+    query, update, upsert = metadata_collection.update_one_calls[-1]
+    assert query == {"_id": "scheduler_definition_revision"}
+    assert update["$inc"] == {"revision": 1}
+    assert upsert is True
+
+
+@pytest.mark.asyncio
+async def test_get_task_for_execution_uses_projection() -> None:
+    storage = ScheduledTaskStorage()
+    collection = _ExecutionProjectionCollection()
+    storage._collections["scheduled_tasks"] = collection
+
+    task = await storage.get_task_for_execution("task_1")
+
+    assert task is not None
+    assert task.id == "task_1"
+    assert collection.find_one_query == {"_id": "task_1"}
+    assert collection.find_one_projection is not None
+    assert collection.find_one_projection["input_payload"] == 1
+    assert collection.find_one_projection["timeout_seconds"] == 1
+    assert "description" not in collection.find_one_projection
+    assert "updated_at" not in collection.find_one_projection
 
 
 def test_close_scheduled_task_storage_releases_singleton() -> None:

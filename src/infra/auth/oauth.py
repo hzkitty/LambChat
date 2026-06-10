@@ -324,17 +324,60 @@ class OAuthService:
                 headers={"Authorization": f"Bearer {access_token}"},
             )
             data = resp.json()
+            if not isinstance(data, dict):
+                logger.error("Unexpected GitHub user payload: %s", type(data).__name__)
+                return None
 
             # 获取邮箱（如果用户没有公开邮箱）
             email = data.get("email")
             if not email:
-                resp = await client.get(
-                    "https://api.github.com/user/emails",
-                    headers={"Authorization": f"Bearer {access_token}"},
-                )
-                emails = resp.json()
-                if emails:
-                    email = emails[0].get("email")
+                for attempt in range(2):
+                    resp = await client.get(
+                        "https://api.github.com/user/emails",
+                        headers={"Authorization": f"Bearer {access_token}"},
+                    )
+                    emails = resp.json()
+                    if isinstance(emails, list):
+                        primary_verified = next(
+                            (
+                                item.get("email")
+                                for item in emails
+                                if isinstance(item, dict)
+                                and item.get("primary")
+                                and item.get("verified")
+                                and item.get("email")
+                            ),
+                            None,
+                        )
+                        any_verified = next(
+                            (
+                                item.get("email")
+                                for item in emails
+                                if isinstance(item, dict)
+                                and item.get("verified")
+                                and item.get("email")
+                            ),
+                            None,
+                        )
+                        any_email = next(
+                            (
+                                item.get("email")
+                                for item in emails
+                                if isinstance(item, dict) and item.get("email")
+                            ),
+                            None,
+                        )
+                        email = primary_verified or any_verified or any_email
+                        break
+
+                    github_message = emails.get("message") if isinstance(emails, dict) else None
+                    logger.error(
+                        "Unexpected GitHub emails payload: %s%s",
+                        type(emails).__name__,
+                        f" ({github_message})" if github_message else "",
+                    )
+                    if attempt == 0:
+                        continue
 
         if not email:
             logger.error("No email found for GitHub user")

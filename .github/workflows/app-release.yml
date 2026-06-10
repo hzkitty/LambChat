@@ -191,35 +191,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-assets
+          bundle_root="frontend/src-tauri/target"
           app_path=""
           dmg_path=""
-          for path in \
-            "frontend/src-tauri/target/universal-apple-darwin/release/bundle/macos" \
-            "frontend/src-tauri/target/aarch64-apple-darwin/release/bundle/macos" \
-            "frontend/src-tauri/target/x86_64-apple-darwin/release/bundle/macos" \
-            "frontend/src-tauri/target/release/bundle/macos"; do
-            if [ -d "$path" ]; then
-              [ -z "$app_path" ] && app_path="$(find "$path" -maxdepth 1 -name '*.app' -type d | head -1 || true)"
-            fi
-          done
-          for path in \
-            "frontend/src-tauri/target/universal-apple-darwin/release/bundle/dmg" \
-            "frontend/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg" \
-            "frontend/src-tauri/target/x86_64-apple-darwin/release/bundle/dmg" \
-            "frontend/src-tauri/target/release/bundle/dmg"; do
-            if [ -d "$path" ]; then
-              [ -z "$dmg_path" ] && dmg_path="$(find "$path" -maxdepth 1 -name '*.dmg' -type f | head -1 || true)"
-            fi
-          done
-          if [ -z "$app_path" ]; then
-            echo "No macOS .app bundle found"
-            exit 1
+          if [ -d "$bundle_root" ]; then
+            app_path="$(find "$bundle_root" -path '*/release/bundle/*' -name '*.app' -type d | sort | head -1 || true)"
+            dmg_path="$(find "$bundle_root" -path '*/release/bundle/*' -name '*.dmg' -type f | sort | head -1 || true)"
           fi
           if [ -z "$dmg_path" ]; then
             echo "No macOS .dmg found"
+            find "$bundle_root" -maxdepth 6 -print || true
             exit 1
           fi
-          ditto -c -k --sequesterRsrc --keepParent "$app_path" "release-assets/LambChat-${RELEASE_TAG}-macOS.zip"
+          if [ -n "$app_path" ]; then
+            ditto -c -k --sequesterRsrc --keepParent "$app_path" "release-assets/LambChat-${RELEASE_TAG}-macOS.zip"
+          else
+            echo "No macOS .app bundle found; uploading DMG only."
+          fi
           cp "$dmg_path" "release-assets/LambChat-${RELEASE_TAG}-macOS.dmg"
 
       - name: Upload desktop artifacts
