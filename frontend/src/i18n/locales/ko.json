@@ -1543,6 +1543,7 @@
     "skills": "스킬 센터",
     "systemSettings": "시스템 설정",
     "team": "팀 빌더",
+    "usage": "사용량",
     "userSettings": "사용자 관리",
     "users": "사용자"
   },
@@ -2045,6 +2046,10 @@
     "team": {
       "description": "역할 기반 에이전트 팀을 구성하고 관리하세요. 팀원을 정의하고, 기능을 할당하며, 다중 에이전트 협업을 조율합니다.",
       "title": "팀 빌더"
+    },
+    "usage": {
+      "description": "Token 소비 추적 및 사용량 상세",
+      "title": "사용량"
     },
     "users": {
       "description": "사용자 계정, 역할 및 액세스 권한을 관리하세요. 멀티테넌트 사용자 라이프사이클 및 보안 설정을 관리합니다.",
@@ -2788,6 +2793,41 @@
   "updateReleaseNotes": "릴리스 노트",
   "updateRetry": "재시도",
   "updateSkip": "나중에",
+  "usage": {
+    "agent": "에이전트",
+    "allPeriods": "전체",
+    "cacheHitRate": "캐시 적중",
+    "cacheRead": "캐시 읽기",
+    "cacheWrite": "캐시 쓰기",
+    "completed": "완료",
+    "duration": "소요 시간",
+    "error": "오류",
+    "inTokens": "입력",
+    "inputTokens": "입력 Tokens",
+    "loadFailed": "사용량 데이터를 불러오지 못했습니다",
+    "logDetails": "로그 상세",
+    "logItems": "개의 로그",
+    "model": "모델",
+    "noUsage": "사용 기록이 없습니다",
+    "noUsageHint": "대화 후 사용량 데이터가 여기에 표시됩니다",
+    "outTokens": "출력",
+    "outputTokens": "출력 Tokens",
+    "refresh": "새로고침",
+    "refreshing": "새로고침 중",
+    "searchPlaceholder": "사용자명으로 검색...",
+    "statsScopeHint": "요약은 모든 일치하는 레코드를 포함합니다",
+    "status": "상태",
+    "subtitle": "Token 소비 추적",
+    "thisMonth": "이번 달",
+    "thisWeek": "이번 주",
+    "time": "시간",
+    "title": "사용량 상세",
+    "today": "오늘",
+    "totalDuration": "총 소요 시간",
+    "totalRequests": "총 요청 수",
+    "totalTokens": "총 Tokens",
+    "user": "사용자"
+  },
   "users": {
     "actions": "작업",
     "confirmDelete": "삭제 확인",

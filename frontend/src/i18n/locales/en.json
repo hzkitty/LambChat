@@ -1556,6 +1556,7 @@
     "skills": "Skill Center",
     "systemSettings": "System Settings",
     "team": "Team Builder",
+    "usage": "Usage",
     "userSettings": "User Management",
     "users": "Users"
   },
@@ -2058,6 +2059,10 @@
     "team": {
       "description": "Compose and manage role-based agent teams. Define team members, assign capabilities, and orchestrate multi-agent collaboration.",
       "title": "Team Builder"
+    },
+    "usage": {
+      "description": "Token consumption tracking and usage details",
+      "title": "Usage"
     },
     "users": {
       "description": "Manage user accounts, roles, and access permissions. Administer multi-tenant user lifecycle and security settings.",
@@ -2805,6 +2810,41 @@
   "updateReleaseNotes": "Release Notes",
   "updateRetry": "Retry",
   "updateSkip": "Later",
+  "usage": {
+    "agent": "Agent",
+    "allPeriods": "All Time",
+    "cacheHitRate": "Cache Hit",
+    "cacheRead": "Cache Read",
+    "cacheWrite": "Cache Write",
+    "completed": "Completed",
+    "duration": "Duration",
+    "error": "Error",
+    "inTokens": "In",
+    "inputTokens": "Input Tokens",
+    "loadFailed": "Failed to load usage data",
+    "logDetails": "Log Details",
+    "logItems": "logs",
+    "model": "Model",
+    "noUsage": "No usage records",
+    "noUsageHint": "Usage data will appear here after conversations",
+    "outTokens": "Out",
+    "outputTokens": "Output Tokens",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing",
+    "searchPlaceholder": "Search by username...",
+    "statsScopeHint": "Summary covers all matching records",
+    "status": "Status",
+    "subtitle": "Token consumption tracking",
+    "thisMonth": "This Month",
+    "thisWeek": "This Week",
+    "time": "Time",
+    "title": "Usage Details",
+    "today": "Today",
+    "totalDuration": "Total Duration",
+    "totalRequests": "Total Requests",
+    "totalTokens": "Total Tokens",
+    "user": "User"
+  },
   "users": {
     "actions": "Actions",
     "confirmDelete": "Confirm Delete",
