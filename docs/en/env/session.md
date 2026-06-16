@@ -28,13 +28,13 @@ Settings for managing chat sessions, event streaming, and session titles.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SESSION_TITLE_MODEL` | `claude-3-5-haiku-20241022` | Model used for generating session titles. |
-| `SESSION_TITLE_API_BASE` | _(empty)_ | Separate API base URL for title generation. Falls back to default LLM config. |
-| `SESSION_TITLE_API_KEY` | _(empty)_ | Separate API key for title generation. **Sensitive.** |
+| `SESSION_TITLE_MODEL` | _(empty)_ | Admin model configuration ID used for generating session titles. Empty = `DEFAULT_MODEL_ID` / default model. Legacy model values are still supported. |
+| `SESSION_TITLE_API_BASE` | _(empty)_ | Legacy compatibility setting. Title generation now uses the provider/API base from `SESSION_TITLE_MODEL` or the default model. |
+| `SESSION_TITLE_API_KEY` | _(empty)_ | Legacy compatibility setting. Title generation now uses the API key from `SESSION_TITLE_MODEL` or the default model. **Sensitive.** |
 | `SESSION_TITLE_PROMPT` | _(long Chinese prompt)_ | Prompt template for title generation. Supports `{lang}` and `{message}` placeholders. |
 
 ::: tip
-You can use a cheaper/faster model (like `gpt-4o-mini`) for session title generation by setting `SESSION_TITLE_MODEL` and optionally `SESSION_TITLE_API_BASE` + `SESSION_TITLE_API_KEY` to a separate provider.
+Use `SESSION_TITLE_MODEL` to select an existing model configuration from model management. Leave it empty to use `DEFAULT_MODEL_ID` / the default model.
 :::
 
 ## Example
@@ -46,5 +46,5 @@ ENABLE_MESSAGE_HISTORY=true
 SSE_CACHE_TTL=86400
 ENABLE_EVENT_MERGER=true
 EVENT_MERGE_INTERVAL=300.0
-SESSION_TITLE_MODEL=gpt-4o-mini
+SESSION_TITLE_MODEL=model-config-id
 ```

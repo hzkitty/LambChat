@@ -42,10 +42,10 @@ Optional reranking for improved memory relevance.
 
 | Variable | Default | Sensitive | Description |
 |----------|---------|-----------|-------------|
-| `NATIVE_MEMORY_MODEL` | _(empty)_ | No | LLM model for memory extraction. |
+| `NATIVE_MEMORY_MODEL` | _(empty)_ | No | Admin model configuration ID for memory extraction. Empty = `DEFAULT_MODEL_ID` / default model. Legacy model values are still supported. |
 | `NATIVE_MEMORY_COMPACTION_MODEL_ID` | _(empty)_ | No | Admin model configuration ID used by the background memory compaction agent. Empty = default model. |
-| `NATIVE_MEMORY_API_BASE` | _(empty)_ | No | LLM API base for memory extraction. |
-| `NATIVE_MEMORY_API_KEY` | _(empty)_ | Yes | LLM API key for memory extraction. |
+| `NATIVE_MEMORY_API_BASE` | _(empty)_ | No | Legacy compatibility setting. Memory extraction now uses the provider/API base from `NATIVE_MEMORY_MODEL` or the default model. |
+| `NATIVE_MEMORY_API_KEY` | _(empty)_ | Yes | Legacy compatibility setting. Memory extraction now uses the API key from `NATIVE_MEMORY_MODEL` or the default model. |
 | `NATIVE_MEMORY_STORE_NAMESPACE` | `memories` | No | LangGraph store namespace. |
 | `NATIVE_MEMORY_STALENESS_DAYS` | `30` | No | Days before memory is considered stale. |
 | `NATIVE_MEMORY_PRUNE_THRESHOLD` | `90` | No | Prune threshold percentage. |
@@ -66,8 +66,6 @@ NATIVE_MEMORY_EMBEDDING_API_BASE=https://api.openai.com/v1
 NATIVE_MEMORY_EMBEDDING_API_KEY=sk-your-key
 NATIVE_MEMORY_EMBEDDING_MODEL=text-embedding-3-small
 
-# LLM for memory extraction (optional, defaults to main LLM)
-NATIVE_MEMORY_MODEL=gpt-4o-mini
-NATIVE_MEMORY_API_BASE=https://api.openai.com/v1
-NATIVE_MEMORY_API_KEY=sk-your-key
+# LLM for memory extraction (optional, defaults to DEFAULT_MODEL_ID / default model)
+NATIVE_MEMORY_MODEL=model-config-id
 ```

@@ -230,6 +230,27 @@ export function ToolResultPanel({
     externalViewMode,
   ]);
 
+  const handleCancelFullscreen = useCallback(() => {
+    onUserInteraction?.();
+    if (isFullscreen) {
+      if (onFullscreenChange) onFullscreenChange(false);
+      else if (externalIsFullscreen === undefined)
+        setInternalIsFullscreen(false);
+    }
+    if (externalViewMode) {
+      onViewModeChange?.("sidebar");
+    } else {
+      setInternalViewMode("sidebar");
+    }
+  }, [
+    onUserInteraction,
+    isFullscreen,
+    onFullscreenChange,
+    externalIsFullscreen,
+    externalViewMode,
+    onViewModeChange,
+  ]);
+
   const panelOwnerRef = useRef(
     Symbol(`tool-result-panel:${title || "untitled"}`),
   );
@@ -266,9 +287,17 @@ export function ToolResultPanel({
   const isSidebar = !isCenter;
   const hasCustomHeader = !!customHeader;
 
+  const panelMode = isFullscreen
+    ? "fullscreen"
+    : isMobile
+      ? "mobile"
+      : isCenter
+        ? "center"
+        : "sidebar";
+
   const content = (
     <div
-      className={`w-full flex flex-col bg-theme-bg-card pointer-events-auto ${
+      className={`tool-console-panel w-full flex flex-col bg-theme-bg-card pointer-events-auto ${
         panelClass
           ? panelClass
           : isFullscreen
@@ -289,6 +318,7 @@ export function ToolResultPanel({
                         : ""
                     }`
       }`}
+      data-tool-panel-mode={panelMode}
       ref={(el) => {
         // Merge refs
         if (isMobile) {
@@ -351,7 +381,7 @@ export function ToolResultPanel({
       {(isSidebar || isMobile || (isCenter && hasCustomHeader)) && (
         <div
           ref={toolbarRef}
-          className={`flex flex-col shrink-0 ${
+          className={`tool-console-chrome flex flex-col shrink-0 ${
             isFullscreen
               ? ""
               : "bg-gradient-to-r from-theme-bg-subtle to-theme-bg-card"
@@ -366,7 +396,7 @@ export function ToolResultPanel({
           {hasCustomHeader ? (
             customHeader
           ) : (
-            <div className="flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-theme-border shrink-0 overflow-hidden">
+            <div className="tool-console-header flex items-center gap-2 px-2 sm:px-4 py-1.5 sm:py-2 border-b border-theme-border shrink-0 overflow-hidden">
               {/* Back button */}
               {effectiveOnBack && (
                 <ToolbarIconButton
@@ -381,7 +411,7 @@ export function ToolResultPanel({
 
               {/* Status + Icon */}
               <div
-                className={`flex items-center justify-center size-8 rounded-xl shrink-0 ${cfg.bg}`}
+                className={`tool-console-header-icon flex items-center justify-center size-8 rounded-xl shrink-0 ${cfg.bg}`}
               >
                 {status === "loading" ? (
                   <LoadingSpinner
@@ -398,9 +428,9 @@ export function ToolResultPanel({
 
               {/* Title */}
               {title && (
-                <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                <div className="tool-console-title-row flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                   <h3
-                    className="min-w-0 max-w-[40%] truncate font-medium text-sm text-theme-text"
+                    className="tool-console-title min-w-0 max-w-[40%] truncate font-medium text-sm text-theme-text"
                     title={title}
                   >
                     {title}
@@ -414,7 +444,7 @@ export function ToolResultPanel({
                       if (!isTagList) {
                         return (
                           <span
-                            className="inline-flex h-5 min-w-0 max-w-[45vw] sm:max-w-[min(28rem,45%)] items-center overflow-hidden rounded-full bg-theme-bg-subtle ring-1 ring-inset ring-theme-border px-2.5 text-[10px] font-medium leading-none text-theme-text-secondary"
+                            className="tool-console-subtitle-pill inline-flex h-5 min-w-0 max-w-[45vw] sm:max-w-[min(28rem,45%)] items-center overflow-hidden rounded-full bg-theme-bg-subtle ring-1 ring-inset ring-theme-border px-2.5 text-[10px] font-medium leading-none text-theme-text-secondary"
                             title={subtitle}
                           >
                             <span className="block min-w-0 truncate">
@@ -515,7 +545,7 @@ export function ToolResultPanel({
         </div>
       )}
 
-      {/* Floating close button (center mode only, no customHeader, desktop only) */}
+      {/* Floating cancel-fullscreen button (center mode only, no customHeader, desktop only) */}
       {isCenter && !hasCustomHeader && !isMobile && (
         <div className="absolute top-3 right-3 z-[310] flex items-center gap-2">
           {effectiveOnBack && (
@@ -531,9 +561,10 @@ export function ToolResultPanel({
           <OverlayRoundIconButton
             onClick={(e) => {
               e.stopPropagation();
-              handleUserClose();
+              handleCancelFullscreen();
             }}
-            aria-label={t("common.close", "关闭")}
+            aria-label={t("documents.cancelFullscreen", "取消全屏")}
+            title={t("documents.cancelFullscreen", "取消全屏")}
             icon={<X size={18} />}
           />
         </div>
@@ -541,7 +572,7 @@ export function ToolResultPanel({
 
       {/* Content */}
       <div
-        className={`flex-1 overflow-auto min-h-0 overscroll-contain ${
+        className={`tool-console-body flex-1 overflow-auto min-h-0 overscroll-contain ${
           isCenter && !hasCustomHeader && !isMobile && !isFullscreen
             ? "!overflow-hidden"
             : ""
@@ -551,7 +582,7 @@ export function ToolResultPanel({
       </div>
 
       {/* Footer */}
-      {footer && <div className="shrink-0">{footer}</div>}
+      {footer && <div className="tool-console-footer shrink-0">{footer}</div>}
     </div>
   );
 

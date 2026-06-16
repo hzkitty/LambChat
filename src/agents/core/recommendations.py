@@ -494,12 +494,18 @@ async def generate_recommend_questions(
     )
 
     try:
+        from src.infra.llm.models_service import resolve_model_reference
+
+        model_id, model_value = await resolve_model_reference(settings.SESSION_TITLE_MODEL)
+        model_kwargs: dict[str, Any] = {
+            "model_id": model_id,
+            "max_tokens": 300,
+            "max_retries": settings.LLM_MAX_RETRIES,
+        }
+        if model_value:
+            model_kwargs["model"] = model_value
         model = await LLMClient.get_model(
-            model=settings.SESSION_TITLE_MODEL,
-            api_base=settings.SESSION_TITLE_API_BASE or None,
-            api_key=settings.SESSION_TITLE_API_KEY or None,
-            max_tokens=300,
-            max_retries=settings.LLM_MAX_RETRIES,
+            **model_kwargs,
         )
         response = await _ainvoke_with_retry(
             model,

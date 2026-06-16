@@ -70,6 +70,47 @@ async def test_get_default_model_respects_allowed_models_before_admin_default(
     assert await models_service.get_default_model_id(["model-a"]) == "model-a"
 
 
+@pytest.mark.asyncio
+async def test_resolve_model_reference_prefers_model_config_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_get_available_models() -> list[dict[str, str]]:
+        return [
+            {"id": "model-a", "value": "openai/gpt-a"},
+            {"id": "model-b", "value": "anthropic/claude-b"},
+        ]
+
+    monkeypatch.setattr(models_service, "get_available_models", fake_get_available_models)
+
+    assert await models_service.resolve_model_reference("model-b") == (
+        "model-b",
+        None,
+    )
+
+
+@pytest.mark.asyncio
+async def test_resolve_model_reference_keeps_legacy_model_value(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_get_available_models() -> list[dict[str, str]]:
+        return [
+            {"id": "model-a", "value": "openai/gpt-a"},
+            {"id": "model-b", "value": "anthropic/claude-b"},
+        ]
+
+    monkeypatch.setattr(models_service, "get_available_models", fake_get_available_models)
+
+    assert await models_service.resolve_model_reference("anthropic/claude-b") == (
+        None,
+        "anthropic/claude-b",
+    )
+
+
+@pytest.mark.asyncio
+async def test_resolve_model_reference_empty_uses_default_model() -> None:
+    assert await models_service.resolve_model_reference("") == (None, None)
+
+
 def test_set_memory_cache_caps_cached_model_list(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -715,6 +715,7 @@ async def generate_session_title(
     支持通过 settings 自定义模型和提示词。
     """
     from src.infra.llm.client import LLMClient
+    from src.infra.llm.models_service import resolve_model_reference
 
     # 验证语言参数白名单
     if lang not in SUPPORTED_LANGUAGES:
@@ -731,19 +732,20 @@ async def generate_session_title(
     if not message or not message.strip():
         return {"title": "新对话", "session_id": session_id}
 
-    title_model = settings.SESSION_TITLE_MODEL
-    title_api_base = settings.SESSION_TITLE_API_BASE or None
-    title_api_key = settings.SESSION_TITLE_API_KEY or None
+    title_model_id, title_model = await resolve_model_reference(settings.SESSION_TITLE_MODEL)
     prompt_template = settings.SESSION_TITLE_PROMPT
 
     # 使用 LLM 生成标题
     try:
+        model_kwargs: dict[str, Any] = {
+            "model_id": title_model_id,
+            "max_tokens": 100,
+            "max_retries": settings.LLM_MAX_RETRIES,
+        }
+        if title_model:
+            model_kwargs["model"] = title_model
         model = await LLMClient.get_model(
-            model=title_model,
-            api_base=title_api_base,
-            api_key=title_api_key,
-            max_tokens=100,
-            max_retries=settings.LLM_MAX_RETRIES,
+            **model_kwargs,
         )
         prompt = prompt_template.replace("{lang}", lang).replace("{message}", message[:800])
 

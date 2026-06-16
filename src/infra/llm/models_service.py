@@ -111,6 +111,24 @@ async def get_default_model_id(allowed_models: Optional[list[str]] = None) -> st
     return model.get("id", "") if model else ""
 
 
+async def resolve_model_reference(reference: str | None) -> tuple[str | None, str | None]:
+    """Resolve a setting value that may be a model config ID or legacy model value.
+
+    Returns ``(model_id, model)`` for ``LLMClient.get_model``. Empty values return
+    ``(None, None)`` so the client falls back to the configured default model.
+    """
+    value = (reference or "").strip()
+    if not value:
+        return None, None
+
+    available_models = await get_available_models()
+    for model in available_models:
+        if model.get("id") == value:
+            return value, None
+
+    return None, value
+
+
 async def get_available_models() -> list[dict[str, Any]]:
     """Get available models — memory → Redis → DB."""
     global _memory_cache

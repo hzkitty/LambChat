@@ -28,13 +28,13 @@
 
 | 变量名 | 默认值 | 说明 |
 |--------|--------|------|
-| `SESSION_TITLE_MODEL` | `claude-3-5-haiku-20241022` | 用于生成会话标题的模型。 |
-| `SESSION_TITLE_API_BASE` | _(空)_ | 标题生成使用的独立 API 基础 URL。留空则使用默认 LLM 配置。 |
-| `SESSION_TITLE_API_KEY` | _(空)_ | 标题生成使用的独立 API 密钥。**敏感信息。** |
+| `SESSION_TITLE_MODEL` | _(空)_ | 用于生成会话标题的管理员模型配置 ID。空 = `DEFAULT_MODEL_ID` / 默认模型。旧的模型值仍兼容。 |
+| `SESSION_TITLE_API_BASE` | _(空)_ | 兼容旧配置保留。标题生成现在使用 `SESSION_TITLE_MODEL` 或默认模型里的 provider/API 地址。 |
+| `SESSION_TITLE_API_KEY` | _(空)_ | 兼容旧配置保留。标题生成现在使用 `SESSION_TITLE_MODEL` 或默认模型里的 API 密钥。**敏感信息。** |
 | `SESSION_TITLE_PROMPT` | _(长中文提示)_ | 标题生成的提示模板。支持 `{lang}` 和 `{message}` 占位符。 |
 
 ::: tip
-你可以通过设置 `SESSION_TITLE_MODEL` 和可选的 `SESSION_TITLE_API_BASE` + `SESSION_TITLE_API_KEY`，使用更便宜/更快的模型（如 `gpt-4o-mini`）来生成会话标题。
+通过 `SESSION_TITLE_MODEL` 选择模型管理里已有的模型配置。留空则使用 `DEFAULT_MODEL_ID` / 默认模型。
 :::
 
 ## 示例
@@ -46,5 +46,5 @@ ENABLE_MESSAGE_HISTORY=true
 SSE_CACHE_TTL=86400
 ENABLE_EVENT_MERGER=true
 EVENT_MERGE_INTERVAL=300.0
-SESSION_TITLE_MODEL=gpt-4o-mini
+SESSION_TITLE_MODEL=model-config-id
 ```

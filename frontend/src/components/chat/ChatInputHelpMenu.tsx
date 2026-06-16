@@ -108,7 +108,8 @@ export function ChatInputHelpMenu({ className }: { className?: string }) {
   return createPortal(
     <div
       ref={ref}
-      className={`fixed bottom-1 right-1 sm:bottom-2 sm:right-2 z-50${
+      data-yields-sidebar
+      className={`chat-input-help-menu fixed bottom-1 right-1 sm:bottom-2 sm:right-2 z-50${
         className ? ` ${className}` : ""
       }`}
     >

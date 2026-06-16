@@ -95,6 +95,44 @@ test("tool result overlay reserves vertical safe-area spacing", () => {
   );
 });
 
+test("floating center overlay close button is labelled as cancel fullscreen", () => {
+  const componentSource = readFileSync(
+    new URL("../ToolResultPanel.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    componentSource,
+    /aria-label=\{t\("documents\.cancelFullscreen", "取消全屏"\)\}/,
+    "center overlay floating X should announce that it cancels fullscreen",
+  );
+  assert.match(
+    componentSource,
+    /const handleCancelFullscreen = useCallback\(\(\) => \{/,
+    "center overlay floating X should have a dedicated cancel-fullscreen handler",
+  );
+  assert.match(
+    componentSource,
+    /onViewModeChange\?\.\("sidebar"\);/,
+    "cancel fullscreen should restore externally controlled panels to sidebar mode",
+  );
+  assert.match(
+    componentSource,
+    /setInternalViewMode\("sidebar"\);/,
+    "cancel fullscreen should restore internally controlled panels to sidebar mode",
+  );
+  assert.match(
+    componentSource,
+    /handleCancelFullscreen\(\);/,
+    "floating X should cancel fullscreen instead of closing the panel",
+  );
+  assert.doesNotMatch(
+    componentSource,
+    /aria-label=\{t\("documents\.cancelFullscreen", "取消全屏"\)\}[\s\S]{0,160}handleUserClose\(\);/,
+    "cancel fullscreen button should not invoke the close flow",
+  );
+});
+
 test("tool result header truncates long titles and subtitles on narrow screens", () => {
   const componentSource = readFileSync(
     new URL("../ToolResultPanel.tsx", import.meta.url),
@@ -103,22 +141,69 @@ test("tool result header truncates long titles and subtitles on narrow screens",
 
   assert.match(
     componentSource,
-    /className="flex items-center gap-1 min-w-0 flex-1 overflow-hidden"/,
+    /className="tool-console-title-row flex items-center gap-2 min-w-0 flex-1 overflow-hidden"/,
     "title row should clip overflowing text within the available header space",
   );
   assert.match(
     componentSource,
-    /className="min-w-0 max-w-\[40%\] truncate font-medium text-sm text-theme-text"/,
+    /className="tool-console-title min-w-0 max-w-\[40%\] truncate font-medium text-sm text-theme-text"/,
     "title should not expand beyond its content, but should still shrink and truncate",
   );
   assert.match(
     componentSource,
-    /className="inline-flex h-5 min-w-0 max-w-\[45vw\] sm:max-w-\[min\(28rem,45%\)\] items-center justify-start overflow-hidden rounded-full bg-theme-bg-subtle px-1 text-\[10px\] font-semibold leading-none text-theme-text-secondary"/,
+    /className="tool-console-subtitle-pill inline-flex h-5 min-w-0 max-w-\[45vw\] sm:max-w-\[min\(28rem,45%\)\] items-center overflow-hidden rounded-full bg-theme-bg-subtle ring-1 ring-inset ring-theme-border px-2\.5 text-\[10px\] font-medium leading-none text-theme-text-secondary"/,
     "subtitle pill should shrink, cap its responsive width, and truncate long prompt text",
   );
   assert.match(
     componentSource,
     /<span className="block min-w-0 truncate">\s*\{subtitle\}\s*<\/span>/s,
     "subtitle text should truncate from the start edge instead of being centered inside the pill",
+  );
+});
+
+test("tool result panel exposes console chrome styling hooks", () => {
+  const componentSource = readFileSync(
+    new URL("../ToolResultPanel.tsx", import.meta.url),
+    "utf8",
+  );
+  const componentsSource = readFileSync(
+    new URL("../../../../../styles/components.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    componentSource,
+    /className=\{`tool-console-panel w-full flex flex-col bg-theme-bg-card pointer-events-auto/,
+    "panel root should expose a stable console chrome class",
+  );
+  assert.match(
+    componentSource,
+    /data-tool-panel-mode=\{panelMode\}/,
+    "panel root should expose the current presentation mode for styling",
+  );
+  assert.match(
+    componentsSource,
+    /\.tool-console-panel\[data-tool-panel-mode="sidebar"\]/,
+    "sidebar mode should receive dedicated console panel styling",
+  );
+  assert.match(
+    componentsSource,
+    /\.tool-console-panel\[data-tool-panel-mode="sidebar"\]\s*\{[\s\S]*height:\s*calc\(100% - 1\.5rem\);[\s\S]*margin:\s*0\.75rem;/,
+    "desktop sidebar mode should leave breathing room instead of filling the viewport",
+  );
+  assert.match(
+    componentsSource,
+    /\.tool-console-panel\[data-tool-panel-mode="sidebar"\]\[data-sidebar-panel\]\s*\{[\s\S]*width:\s*calc\(var\(--sidebar-preview-width, 60%\) - 1\.5rem\) !important;[\s\S]*max-width:\s*calc\(var\(--sidebar-preview-width, 60%\) - 1\.5rem\) !important;/,
+    "floating sidebar width should subtract horizontal margins so its border is not clipped",
+  );
+  assert.doesNotMatch(
+    componentSource,
+    /data-tool-panel-status=\{status\}/,
+    "panel root should not expose unused status styling hooks",
+  );
+  assert.doesNotMatch(
+    componentsSource,
+    /\.tool-console-header-icon::after/,
+    "header icon should not render an extra corner status dot",
   );
 });

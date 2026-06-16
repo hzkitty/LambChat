@@ -291,7 +291,7 @@ SETTING_DEFINITIONS: dict[str, dict] = {
         "category": SettingCategory.SESSION,
         "subcategory": "title",
         "description": "settingDesc.SESSION_TITLE_MODEL",
-        "default": "claude-3-5-haiku-20241022",
+        "default": "",
     },
     "SESSION_TITLE_API_BASE": {
         "type": SettingType.STRING,

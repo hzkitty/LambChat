@@ -42,10 +42,10 @@
 
 | 变量名 | 默认值 | 敏感 | 说明 |
 |--------|--------|------|------|
-| `NATIVE_MEMORY_MODEL` | _(空)_ | 否 | 用于记忆提取的 LLM 模型。 |
+| `NATIVE_MEMORY_MODEL` | _(空)_ | 否 | 用于记忆提取的管理员模型配置 ID。空 = `DEFAULT_MODEL_ID` / 默认模型。旧的模型值仍兼容。 |
 | `NATIVE_MEMORY_COMPACTION_MODEL_ID` | _(空)_ | 否 | 后台记忆压缩 agent 使用的管理员模型配置 ID。空 = 默认模型。 |
-| `NATIVE_MEMORY_API_BASE` | _(空)_ | 否 | 用于记忆提取的 LLM API 基础 URL。 |
-| `NATIVE_MEMORY_API_KEY` | _(空)_ | 是 | 用于记忆提取的 LLM API 密钥。 |
+| `NATIVE_MEMORY_API_BASE` | _(空)_ | 否 | 兼容旧配置保留。记忆提取现在使用 `NATIVE_MEMORY_MODEL` 或默认模型里的 provider/API 地址。 |
+| `NATIVE_MEMORY_API_KEY` | _(空)_ | 是 | 兼容旧配置保留。记忆提取现在使用 `NATIVE_MEMORY_MODEL` 或默认模型里的 API 密钥。 |
 | `NATIVE_MEMORY_STORE_NAMESPACE` | `memories` | 否 | LangGraph 存储命名空间。 |
 | `NATIVE_MEMORY_STALENESS_DAYS` | `30` | 否 | 记忆被视为过期的天数。 |
 | `NATIVE_MEMORY_PRUNE_THRESHOLD` | `90` | 否 | 裁剪阈值百分比。 |
@@ -66,8 +66,6 @@ NATIVE_MEMORY_EMBEDDING_API_BASE=https://api.openai.com/v1
 NATIVE_MEMORY_EMBEDDING_API_KEY=sk-your-key
 NATIVE_MEMORY_EMBEDDING_MODEL=text-embedding-3-small
 
-# 记忆提取 LLM（可选，默认使用主 LLM）
-NATIVE_MEMORY_MODEL=gpt-4o-mini
-NATIVE_MEMORY_API_BASE=https://api.openai.com/v1
-NATIVE_MEMORY_API_KEY=sk-your-key
+# 记忆提取 LLM（可选，默认使用 DEFAULT_MODEL_ID / 默认模型）
+NATIVE_MEMORY_MODEL=model-config-id
 ```

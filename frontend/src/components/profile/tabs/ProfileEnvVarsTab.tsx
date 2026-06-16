@@ -247,7 +247,7 @@ export function ProfileEnvVarsTab() {
                   </>
                 ) : (
                   <>
-                    <span className="text-xs font-mono font-medium text-stone-700 dark:text-stone-200 shrink-0 max-w-[40%] truncate">
+                    <span className="text-xs font-mono font-medium text-stone-700 dark:text-stone-200 shrink-0 truncate">
                       {envVar.key}
                     </span>
                     <span className="text-stone-300 dark:text-stone-600">

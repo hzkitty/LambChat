@@ -13,6 +13,13 @@
   [data-yields-sidebar] {
     transition: right 300ms ease-out;
   }
+  .chat-input-help-menu {
+    transition:
+      right 300ms ease-out,
+      opacity 160ms ease,
+      transform 160ms ease,
+      visibility 160ms ease;
+  }
   .app-toaster {
     left: calc(var(--app-toast-sidebar-offset, 0px) + 16px) !important;
     transition:
@@ -21,6 +28,12 @@
   }
   html[data-sidebar-preview="open"] .app-toaster {
     right: calc(var(--sidebar-preview-width, 60%) + 16px) !important;
+  }
+  html[data-sidebar-preview="open"] body > .chat-input-help-menu {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    visibility: hidden;
   }
   /* Sidebar panel uses percentage width on desktop */
   [data-sidebar-panel] {
@@ -42,6 +55,12 @@
   }
   html[data-editor-sidebar="open"] .app-toaster {
     right: calc(var(--editor-sidebar-width, 30%) + 16px) !important;
+  }
+  html[data-editor-sidebar="open"] body > .chat-input-help-menu {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    visibility: hidden;
   }
 
   /* When both sidebars are open, compress #root for the combined width */

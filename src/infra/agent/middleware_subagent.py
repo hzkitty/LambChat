@@ -329,7 +329,6 @@ class SubagentActivityMiddleware(AgentMiddleware):
         # Use the same API config but could use a cheaper model
         llm = await LLMClient.get_model(
             temperature=0.3,
-            max_tokens=1500,
         )
 
         prompt = (

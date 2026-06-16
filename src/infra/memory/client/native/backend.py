@@ -134,21 +134,26 @@ class NativeMemoryBackend(MemoryBackend):
     async def _get_memory_model():
         """Get LLM model for memory operations.
 
-        Uses dedicated NATIVE_MEMORY_MODEL/API config if set,
-        otherwise falls back to the main LLM_MODEL.
+        Uses the configured model ID if set, otherwise falls back to the
+        default model. Provider credentials and base URL come from the model
+        provider configuration.
         """
-        model = getattr(settings, "NATIVE_MEMORY_MODEL", None)
-        api_base = getattr(settings, "NATIVE_MEMORY_API_BASE", None) or None
-        api_key = getattr(settings, "NATIVE_MEMORY_API_KEY", None) or None
         max_tokens = int(getattr(settings, "NATIVE_MEMORY_MAX_TOKENS", 2000))
         from src.infra.llm.client import LLMClient
+        from src.infra.llm.models_service import resolve_model_reference
 
+        model_id, model_value = await resolve_model_reference(
+            getattr(settings, "NATIVE_MEMORY_MODEL", "")
+        )
+        model_kwargs: dict[str, Any] = {
+            "model_id": model_id,
+            "temperature": 0.1,
+            "max_tokens": max_tokens,
+        }
+        if model_value:
+            model_kwargs["model"] = model_value
         return await LLMClient.get_model(
-            model=model,
-            api_base=api_base,
-            api_key=api_key,
-            temperature=0.1,
-            max_tokens=max_tokens,
+            **model_kwargs,
         )
 
     async def retain(

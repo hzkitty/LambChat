@@ -129,7 +129,7 @@ class _MalformedJsonModel:
         return _MalformedJsonResponse()
 
 
-async def test_generate_recommend_questions_uses_session_title_model(monkeypatch) -> None:
+async def test_generate_recommend_questions_uses_session_title_model_id(monkeypatch) -> None:
     calls = []
     model = _FakeModel()
 
@@ -137,27 +137,24 @@ async def test_generate_recommend_questions_uses_session_title_model(monkeypatch
         calls.append(kwargs)
         return model
 
+    async def fake_resolve_model_reference(_value):
+        return "title-model", None
+
     monkeypatch.setattr("src.infra.llm.client.LLMClient.get_model", fake_get_model)
+    monkeypatch.setattr(
+        "src.infra.llm.models_service.resolve_model_reference",
+        fake_resolve_model_reference,
+    )
     monkeypatch.setattr(
         "src.agents.core.recommendations.settings.SESSION_TITLE_MODEL",
         "title-model",
-    )
-    monkeypatch.setattr(
-        "src.agents.core.recommendations.settings.SESSION_TITLE_API_BASE",
-        "https://title.example/v1",
-    )
-    monkeypatch.setattr(
-        "src.agents.core.recommendations.settings.SESSION_TITLE_API_KEY",
-        "title-key",
     )
 
     questions = await generate_recommend_questions("如何准备半程马拉松？", "先建立基础跑量。")
 
     assert calls == [
         {
-            "model": "title-model",
-            "api_base": "https://title.example/v1",
-            "api_key": "title-key",
+            "model_id": "title-model",
             "max_tokens": 300,
             "max_retries": 3,
         }
@@ -461,6 +458,40 @@ async def test_generate_recommend_questions_falls_back_quietly_without_title_api
         "接下来我该重点关注什么？",
         "能展开说说如何准备半程马拉松吗？",
         "有没有更具体的例子？",
+    ]
+
+
+async def test_generate_recommend_questions_uses_default_model_when_title_model_empty(
+    monkeypatch,
+) -> None:
+    calls = []
+    model = _FakeModel()
+
+    async def fake_get_model(**kwargs):
+        calls.append(kwargs)
+        return model
+
+    async def fake_resolve_model_reference(_value):
+        return None, None
+
+    monkeypatch.setattr("src.infra.llm.client.LLMClient.get_model", fake_get_model)
+    monkeypatch.setattr(
+        "src.infra.llm.models_service.resolve_model_reference",
+        fake_resolve_model_reference,
+    )
+    monkeypatch.setattr(
+        "src.agents.core.recommendations.settings.SESSION_TITLE_MODEL",
+        "",
+    )
+
+    await generate_recommend_questions("如何准备半程马拉松？")
+
+    assert calls == [
+        {
+            "model_id": None,
+            "max_tokens": 300,
+            "max_retries": 3,
+        }
     ]
 
 

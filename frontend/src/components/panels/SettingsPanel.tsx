@@ -678,6 +678,23 @@ export function SettingsPanel() {
                         MODEL_CONFIG_SETTING_KEYS.has(setting.key) ||
                         setting.type === "boolean" ||
                         (setting.type === "select" && setting.options);
+                      const displayValue = getDisplayValue(setting);
+                      const legacyModelOption =
+                        MODEL_CONFIG_SETTING_KEYS.has(setting.key) &&
+                        displayValue &&
+                        !availableModels.some(
+                          (model) => model.id === displayValue,
+                        )
+                          ? [
+                              {
+                                value: displayValue,
+                                label: `${t(
+                                  "settings.legacyModelValue",
+                                  "Legacy value",
+                                )}: ${displayValue}`,
+                              },
+                            ]
+                          : [];
 
                       return (
                         <div
@@ -720,7 +737,7 @@ export function SettingsPanel() {
                           <div className="mt-3">
                             {isSelect && (
                               <Select
-                                value={getDisplayValue(setting)}
+                                value={displayValue}
                                 onChange={(v) =>
                                   handleValueChange(
                                     setting.key,
@@ -742,58 +759,51 @@ export function SettingsPanel() {
                                           value: role.name,
                                           label: role.name,
                                         }))
-                                      : setting.key === "DEFAULT_MODEL_ID"
+                                      : MODEL_CONFIG_SETTING_KEYS.has(
+                                            setting.key,
+                                          )
                                         ? [
                                             {
                                               value: "",
-                                              label: t(
-                                                "settings.firstEnabledModel",
-                                                "First enabled model",
-                                              ),
+                                              label:
+                                                setting.key ===
+                                                "DEFAULT_MODEL_ID"
+                                                  ? t(
+                                                      "settings.firstEnabledModel",
+                                                      "First enabled model",
+                                                    )
+                                                  : t(
+                                                      "settings.defaultModel",
+                                                      "Default model",
+                                                    ),
                                             },
+                                            ...legacyModelOption,
                                             ...availableModels.map((model) => ({
                                               value: model.id,
                                               label: `${model.label} (${model.value})`,
                                             })),
                                           ]
-                                        : setting.key ===
-                                            "NATIVE_MEMORY_COMPACTION_MODEL_ID"
+                                        : setting.type === "boolean"
                                           ? [
                                               {
-                                                value: "",
+                                                value: "true",
                                                 label: t(
-                                                  "settings.defaultModel",
-                                                  "Default model",
+                                                  "settings.true",
+                                                  "true",
                                                 ),
                                               },
-                                              ...availableModels.map(
-                                                (model) => ({
-                                                  value: model.id,
-                                                  label: `${model.label} (${model.value})`,
-                                                }),
-                                              ),
+                                              {
+                                                value: "false",
+                                                label: t(
+                                                  "settings.false",
+                                                  "false",
+                                                ),
+                                              },
                                             ]
-                                          : setting.type === "boolean"
-                                            ? [
-                                                {
-                                                  value: "true",
-                                                  label: t(
-                                                    "settings.true",
-                                                    "true",
-                                                  ),
-                                                },
-                                                {
-                                                  value: "false",
-                                                  label: t(
-                                                    "settings.false",
-                                                    "false",
-                                                  ),
-                                                },
-                                              ]
-                                            : setting.options?.map((opt) => ({
-                                                value: opt,
-                                                label: opt,
-                                              })) ?? []
+                                          : setting.options?.map((opt) => ({
+                                              value: opt,
+                                              label: opt,
+                                            })) ?? []
                                 }
                               />
                             )}
