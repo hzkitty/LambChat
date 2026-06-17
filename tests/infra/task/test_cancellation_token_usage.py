@@ -140,3 +140,48 @@ async def test_cancel_run_waits_for_local_task_graceful_cancel_after_agent_close
     assert result["cancelled_locally"] is False
     assert task.done()
     assert task_cancelled is False
+
+
+@pytest.mark.asyncio
+async def test_cancel_run_cancels_local_task_when_agent_close_hangs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    task_cancelled = False
+
+    async def _local_task() -> None:
+        nonlocal task_cancelled
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            task_cancelled = True
+            raise
+
+    task = asyncio.create_task(_local_task())
+    cancellation = TaskCancellation(lock=asyncio.Lock(), tasks={"run-1": task})
+
+    class _HangingAgent:
+        async def close(self, run_id: str) -> None:
+            assert run_id == "run-1"
+            await asyncio.Event().wait()
+
+    class _FakeFactory:
+        @staticmethod
+        async def get(agent_id: str):
+            assert agent_id == "search"
+            return _HangingAgent()
+
+    monkeypatch.setattr("src.infra.task.cancellation.get_redis_client", lambda: _FakeRedis())
+    monkeypatch.setattr("src.agents.core.base.AgentFactory", _FakeFactory)
+    monkeypatch.setattr(cancellation_module, "_AGENT_CLOSE_CANCEL_TIMEOUT", 0.01)
+
+    result = await cancellation.cancel_run(
+        "run-1",
+        user_id=None,
+        run_info={"agent_id": "search"},
+        publish=False,
+    )
+
+    assert result["success"] is True
+    assert result["cancelled_locally"] is True
+    assert task.done()
+    assert task_cancelled is True

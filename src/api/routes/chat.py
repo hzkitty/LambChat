@@ -25,6 +25,7 @@ from src.infra.goal import GoalSpec, coerce_goal_spec
 from src.infra.logging import get_logger
 from src.infra.persona_preset.manager import PersonaPresetManager
 from src.infra.session.manager import SessionManager
+from src.infra.task.cancellation import _close_agent_safely
 from src.infra.task.concurrency import register_executor
 from src.infra.task.manager import get_task_manager
 from src.infra.task.status import TaskStatus
@@ -346,7 +347,7 @@ async def _execute_agent_stream(
     except (asyncio.CancelledError, TaskInterruptedError):
         # 取消/中断时，调用 agent.close 清理资源
         if run_id:
-            await agent.close(run_id)
+            await _close_agent_safely(agent, run_id)
         # agent 的 finally 块可能已发 goal:end，此处再 yield 确保不遗漏（Presenter 有去重）
         if active_goal is not None and not goal_end_emitted:
             ended_at = datetime.now(timezone.utc).isoformat()

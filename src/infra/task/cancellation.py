@@ -32,11 +32,25 @@ _interrupted_runs: Dict[str, float] = {}
 _INTERRUPT_MAX_AGE = 600  # 10 分钟
 _INTERRUPT_CLEANUP_INTERVAL = 1000  # 每 1000 次检查触发一次清理
 _GRACEFUL_CANCEL_TIMEOUT = 2.0
+_AGENT_CLOSE_CANCEL_TIMEOUT = 2.0
 _interrupt_check_counter = 0
 
 
 async def _cancel_payload_json_dumps(payload: dict[str, Any]) -> str:
     return await run_blocking_io(json.dumps, payload)
+
+
+async def _close_agent_safely(agent: Any, run_id: str) -> bool:
+    try:
+        await asyncio.wait_for(agent.close(run_id), timeout=_AGENT_CLOSE_CANCEL_TIMEOUT)
+        return True
+    except asyncio.TimeoutError:
+        logger.warning(
+            "Timed out waiting for agent.close during cancel: run_id=%s, timeout=%.1fs",
+            run_id,
+            _AGENT_CLOSE_CANCEL_TIMEOUT,
+        )
+        return False
 
 
 class TaskCancellation:
@@ -164,7 +178,7 @@ class TaskCancellation:
                     from src.agents.core.base import AgentFactory
 
                     agent = await AgentFactory.get(agent_id)
-                    await agent.close(run_id)
+                    await _close_agent_safely(agent, run_id)
                     logger.info(f"Agent.close({run_id}) called for agent={agent_id}")
                 except Exception as e:
                     logger.warning(f"Failed to call agent.close: {e}")
@@ -189,6 +203,7 @@ class TaskCancellation:
                     task.cancel()
                     cancelled_locally = True
                     logger.info(f"Task cancelled locally: run_id={run_id}")
+                    await asyncio.gather(task, return_exceptions=True)
             except asyncio.CancelledError:
                 raise
             except Exception:

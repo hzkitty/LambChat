@@ -22,6 +22,22 @@ async def _cancel_message_json_loads(raw_value: Any) -> Any:
     return await run_blocking_io(json.loads, raw_value)
 
 
+_AGENT_CLOSE_CANCEL_TIMEOUT = 2.0
+
+
+async def _close_agent_safely(agent: Any, run_id: str) -> bool:
+    try:
+        await asyncio.wait_for(agent.close(run_id), timeout=_AGENT_CLOSE_CANCEL_TIMEOUT)
+        return True
+    except asyncio.TimeoutError:
+        logger.warning(
+            "Timed out waiting for agent.close via pub/sub: run_id=%s, timeout=%.1fs",
+            run_id,
+            _AGENT_CLOSE_CANCEL_TIMEOUT,
+        )
+        return False
+
+
 class TaskPubSub:
     """
     Redis Pub/Sub 管理类
@@ -119,7 +135,7 @@ class TaskPubSub:
                         from src.agents.core.base import AgentFactory
 
                         agent = await AgentFactory.get(agent_id)
-                        await agent.close(run_id)
+                        await _close_agent_safely(agent, run_id)
                         logger.info(
                             f"Agent.close({run_id}) called via pub/sub for agent={agent_id}"
                         )

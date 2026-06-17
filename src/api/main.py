@@ -65,6 +65,7 @@ from src.infra.share.seo import (
     inject_public_route_seo_into_html,
     inject_share_seo_into_html,
 )
+from src.infra.task.constants import HEARTBEAT_TIMEOUT
 from src.kernel.config import initialize_settings, settings
 
 # Suppress SyntaxWarning from oss2 SDK (invalid escape sequence in their source)
@@ -91,8 +92,10 @@ _LIFESPAN_BACKGROUND_TASK_NAMES = (
     "agent_discovery_task",
     "models_preload_task",
     "stale_task_cleanup_task",
+    "stale_task_cleanup_recheck_task",
     "feishu_task",
 )
+_STALE_TASK_CLEANUP_RECHECK_DELAY_SECONDS = max(5.0, HEARTBEAT_TIMEOUT * 2 + 5)
 
 
 def _is_body_limit_exempt(scope: Scope) -> bool:
@@ -258,8 +261,14 @@ async def _cleanup_stale_tasks() -> None:
 
 def _schedule_stale_task_cleanup(app: FastAPI) -> asyncio.Task[None]:
     """Schedule stale task reconciliation without blocking application readiness."""
+
+    async def _run_recheck() -> None:
+        await asyncio.sleep(_STALE_TASK_CLEANUP_RECHECK_DELAY_SECONDS)
+        await _cleanup_stale_tasks()
+
     task = asyncio.create_task(_cleanup_stale_tasks())
     app.state.stale_task_cleanup_task = task
+    app.state.stale_task_cleanup_recheck_task = asyncio.create_task(_run_recheck())
     return task
 
 

@@ -181,6 +181,35 @@ async def test_schedule_stale_task_cleanup_does_not_wait_for_cleanup(
     release.set()
     await task
     assert calls == ["started", "finished"]
+    app.state.stale_task_cleanup_recheck_task.cancel()
+    await asyncio.gather(app.state.stale_task_cleanup_recheck_task, return_exceptions=True)
+
+
+@pytest.mark.asyncio
+async def test_schedule_stale_task_cleanup_rechecks_after_heartbeat_ttl(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+    sleep_calls: list[float] = []
+
+    async def _cleanup_stale_tasks() -> None:
+        calls.append("cleanup")
+
+    async def _sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(api_main, "_cleanup_stale_tasks", _cleanup_stale_tasks)
+    monkeypatch.setattr(api_main, "_STALE_TASK_CLEANUP_RECHECK_DELAY_SECONDS", 0.5)
+    monkeypatch.setattr(api_main.asyncio, "sleep", _sleep)
+    app = SimpleNamespace(state=SimpleNamespace())
+
+    task = api_main._schedule_stale_task_cleanup(app)
+    await task
+    await app.state.stale_task_cleanup_recheck_task
+
+    assert task is app.state.stale_task_cleanup_task
+    assert calls == ["cleanup", "cleanup"]
+    assert sleep_calls == [0.5]
 
 
 @pytest.mark.asyncio
